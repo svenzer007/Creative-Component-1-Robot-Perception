@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Applications (dev preview)</title>
+  </head>
+  <body>
+    <!-- Dev-only preview of the Applications section: npm run dev, then open /preview-applications.html.
+         Not part of the production build (vite builds index.html only). -->
+    <main id="applications" style="width:min(1500px, calc(100% - 40px)); margin-inline:auto"></main>
+    <script type="module">
+      import './src/styles.css';
+      import { renderApplications } from './src/ui/applications.ts';
+      renderApplications(document.getElementById('applications'));
+    </script>
+  </body>
+</html>
