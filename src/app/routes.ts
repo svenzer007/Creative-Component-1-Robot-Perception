@@ -6,6 +6,13 @@ import type { RouteDefinition } from './router';
  */
 export const ROUTES: readonly RouteDefinition[] = [
   {
+    id: 'start',
+    path: '/start',
+    label: 'Start here',
+    title: 'Start here · Epipolar Geometry Lab',
+    load: () => import('../pages/start/startPage'),
+  },
+  {
     id: 'lab',
     path: '/lab',
     label: '3D lab',
