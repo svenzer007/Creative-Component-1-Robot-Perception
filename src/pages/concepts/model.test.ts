@@ -108,4 +108,43 @@ describe('Core Concepts local state', () => {
     expect(fragile.rank).toBe(2);
     expect(fragile.warning).toContain('Near pure rotation');
   });
+
+  it('bridges F and E and preserves the normalized epipolar constraint', () => {
+    const store = new CoreConceptsStore();
+    store.update({ targetPixel: snapTargetToLine(store.snapshot())! });
+    const snapshot = store.snapshot();
+    expect(snapshot.essentialAgreement).not.toBeNull();
+    expect(snapshot.essentialAgreement!).toBeLessThan(1e-12);
+    expect(Math.abs(snapshot.normalizedResidual!)).toBeLessThan(1e-11);
+    expect(snapshot.essentialSingularValues[0]).toBeCloseTo(snapshot.essentialSingularValues[1], 11);
+    expect(snapshot.essentialSingularValues[2]).toBeLessThan(1e-12);
+  });
+
+  it('scales raw matrices but preserves canonical geometry and translation direction', () => {
+    const one = deriveConcepts(DEFAULT_CONCEPTS_STATE);
+    const state = structuredClone(DEFAULT_CONCEPTS_STATE);
+    state.baselineScale = 2.25;
+    const scaled = deriveConcepts(state);
+    expect(scaled.essentialRawNorm / one.essentialRawNorm).toBeCloseTo(2.25, 12);
+    expect(scaled.fundamentalRawNorm / one.fundamentalRawNorm).toBeCloseTo(2.25, 12);
+    expect(scaled.essentialScaleInvariantError).toBeLessThan(1e-12);
+    expect(scaled.fundamentalScaleInvariantError).toBeLessThan(1e-12);
+    scaled.translationDirection!.forEach((value, index) => {
+      expect(value).toBeCloseTo(one.translationDirection![index], 12);
+    });
+    scaled.fundamentalLine!.forEach((value, index) => {
+      expect(value).toBeCloseTo(one.fundamentalLine![index], 12);
+    });
+  });
+
+  it('updates normalized coordinates when intrinsics change', () => {
+    const first = deriveConcepts(DEFAULT_CONCEPTS_STATE);
+    const state = structuredClone(DEFAULT_CONCEPTS_STATE);
+    state.intrinsics1.fx = 800;
+    state.intrinsics1.cx = 280;
+    const changed = deriveConcepts(state);
+    expect(changed.sourceNormalized).not.toEqual(first.sourceNormalized);
+    expect(changed.sourceNormalized[0]).toBeCloseTo((state.sourcePixel[0] - 280) / 800, 12);
+    expect(changed.fundamentalCanonical).not.toEqual(first.fundamentalCanonical);
+  });
 });

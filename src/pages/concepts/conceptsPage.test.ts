@@ -18,7 +18,7 @@ describe('Core Concepts page', () => {
     page.deactivate();
     page.activate();
     expect(essential.getAttribute('aria-pressed')).toBe('true');
-    expect(container.querySelector<HTMLElement>('[data-essential-placeholder]')!.hidden).toBe(false);
+    expect(container.querySelector<HTMLElement>('[data-essential]')!.hidden).toBe(false);
   });
 
   it('supports keyboard nudging and pointer selection', () => {
@@ -40,5 +40,36 @@ describe('Core Concepts page', () => {
     target.dispatchEvent(event);
     expect(Number(target.querySelector('circle.concept-target-point')!.getAttribute('cx'))).toBe(300);
     expect(Number(target.querySelector('circle.concept-target-point')!.getAttribute('cy'))).toBe(190);
+  });
+
+  it('resets baseline scaling when Camera 2 geometry is edited', () => {
+    const page = createPage();
+    const container = document.createElement('section');
+    page.mount(container);
+    const scale = container.querySelector<HTMLInputElement>('[data-baseline-scale]')!;
+    scale.value = '2';
+    scale.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(scale.nextElementSibling?.textContent).toBe('2.00×');
+    const cameraX = container.querySelector<HTMLInputElement>('[data-camera="x"]')!;
+    cameraX.value = '2.1';
+    cameraX.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(scale.value).toBe('1');
+    expect(scale.nextElementSibling?.textContent).toBe('1.00×');
+  });
+
+  it('updates normalized coordinates from focal and principal-point controls', () => {
+    const page = createPage();
+    const container = document.createElement('section');
+    page.mount(container);
+    const before = container.querySelector<HTMLElement>('[data-normalized-source]')!.textContent;
+    const focal = container.querySelector<HTMLInputElement>('[data-focal="1"]')!;
+    focal.value = '800';
+    focal.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(container.querySelector<HTMLElement>('[data-normalized-source]')!.textContent).not.toBe(before);
+    const cx = container.querySelector<HTMLInputElement>('[data-intrinsics="1:cx"]')!;
+    const afterFocal = container.querySelector<HTMLElement>('[data-normalized-source]')!.textContent;
+    cx.value = '280';
+    cx.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(container.querySelector<HTMLElement>('[data-normalized-source]')!.textContent).not.toBe(afterFocal);
   });
 });

@@ -124,3 +124,49 @@ export function renderImagePair(
     <text class="concept-point-label target-label" x="${targetPixel[0] + 13}" y="${targetPixel[1] - 12}">x′</text>
     ${snapshot.fundamentalLine ? '' : '<text class="concept-empty-message" x="320" y="210">No finite epipolar line</text>'}`;
 }
+
+export function renderNormalizedPlanes(
+  sourceSvg: SVGSVGElement,
+  targetSvg: SVGSVGElement,
+  snapshot: CoreConceptsSnapshot,
+): void {
+  const render = (point: Vec3, role: 'source' | 'target'): string => {
+    const x = 160 + point[0] * 180;
+    const y = 105 + point[1] * 180;
+    const roleLabel = role === 'source' ? 'x̂' : 'x̂′';
+    return `
+      <rect x="1" y="1" width="318" height="208" rx="9" class="normalized-frame"/>
+      <g class="normalized-grid"><line x1="160" y1="14" x2="160" y2="196"/><line x1="18" y1="105" x2="302" y2="105"/></g>
+      <line class="normalized-ray" x1="160" y1="105" x2="${x}" y2="${y}"/>
+      <circle class="normalized-point ${role}" cx="${x}" cy="${y}" r="7"/>
+      <text class="normalized-label" x="${x + 11}" y="${y - 9}">${roleLabel}</text>
+      <text class="normalized-z" x="12" y="194">normalized plane · z = 1</text>`;
+  };
+  sourceSvg.innerHTML = render(snapshot.sourceNormalized, 'source');
+  targetSvg.innerHTML = render(snapshot.targetNormalized, 'target');
+}
+
+export function renderBaselineDiagram(svg: SVGSVGElement, snapshot: CoreConceptsSnapshot): void {
+  const centerX = 120;
+  const centerY = 120;
+  const base = snapshot.state.camera2.center;
+  const planarLength = Math.hypot(base[0], base[2]);
+  const directionX = planarLength > 1e-10 ? base[0] / planarLength : 1;
+  const directionY = planarLength > 1e-10 ? -base[2] / planarLength : 0;
+  const visibleLength = Math.min(235, 58 + snapshot.state.baselineScale * 58);
+  const targetX = centerX + directionX * visibleLength;
+  const targetY = centerY + directionY * visibleLength;
+  const yaw = snapshot.state.camera2.yawDegrees * Math.PI / 180;
+  const headingX = Math.sin(yaw) * 25;
+  const headingY = -Math.cos(yaw) * 25;
+  svg.innerHTML = `
+    <defs><marker id="baseline-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z"/></marker></defs>
+    <g class="pose-orbits"><circle cx="${centerX}" cy="${centerY}" r="58"/><circle cx="${centerX}" cy="${centerY}" r="116"/><circle cx="${centerX}" cy="${centerY}" r="174"/></g>
+    <line class="baseline-line" x1="${centerX}" y1="${centerY}" x2="${targetX}" y2="${targetY}" marker-end="url(#baseline-arrow)"/>
+    <circle class="pose-camera source" cx="${centerX}" cy="${centerY}" r="10"/>
+    <text class="pose-label source" x="${centerX - 27}" y="${centerY + 30}">C₁</text>
+    <circle class="pose-camera target" cx="${targetX}" cy="${targetY}" r="10"/>
+    <line class="camera-heading" x1="${targetX}" y1="${targetY}" x2="${targetX + headingX}" y2="${targetY + headingY}"/>
+    <text class="pose-label target" x="${targetX + 13}" y="${targetY + 5}">C₂</text>
+    <text class="baseline-label" x="${(centerX + targetX) / 2}" y="${(centerY + targetY) / 2 - 10}">λ = ${snapshot.state.baselineScale.toFixed(2)}×</text>`;
+}

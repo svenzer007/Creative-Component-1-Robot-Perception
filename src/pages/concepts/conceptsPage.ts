@@ -13,8 +13,15 @@ import {
   type ConceptSection,
   type CoreConceptsSnapshot,
   type CoreConceptsState,
+  type IntrinsicsControls,
 } from './model';
-import { formatMatrix, formatVector, renderImagePair } from './views';
+import {
+  formatMatrix,
+  formatVector,
+  renderBaselineDiagram,
+  renderImagePair,
+  renderNormalizedPlanes,
+} from './views';
 
 const MARKUP = `
   <main class="concepts-shell">
@@ -115,10 +122,91 @@ const MARKUP = `
       </section>
     </section>
 
-    <section class="concepts-stage" data-essential-placeholder hidden aria-live="polite">
-      <p class="concepts-stage-label">Next experiment</p>
-      <h2>Remove the camera intrinsics</h2>
-      <p>The selected pixels will carry forward into calibrated, normalized camera coordinates.</p>
+    <section class="concepts-essential" data-essential hidden>
+      <div class="concepts-workspace-heading">
+        <div><span>01 · Calibrate</span><h2>Pixels are not yet viewing rays</h2><p>Keep the same x and x′. Remove K₁ and K₂ to reach canonical camera coordinates.</p></div>
+        <div class="concepts-presets" aria-label="Essential matrix camera presets">
+          <button type="button" data-preset="general">General</button>
+          <button type="button" data-preset="rectified">Rectified</button>
+          <button type="button" data-preset="forward">Forward</button>
+          <button type="button" data-preset="nearRotation">Near rotation</button>
+        </div>
+      </div>
+
+      <div class="calibration-grid">
+        <article class="calibration-card source-calibration">
+          <header><span>Image 1 calibration</span><code>x̂ = K₁⁻¹x</code></header>
+          <div class="calibration-equation"><code data-pixel-source></code><b>→ K₁⁻¹ →</b><code data-normalized-source></code></div>
+          <svg data-normalized-source-svg viewBox="0 0 320 210" role="img" aria-label="Camera 1 normalized z equals 1 image plane"></svg>
+          <label class="focal-control">Focal length <input data-focal="1" type="range" min="250" max="1000" step="5"><output></output></label>
+        </article>
+        <article class="calibration-card target-calibration">
+          <header><span>Image 2 calibration</span><code>x̂′ = K₂⁻¹x′</code></header>
+          <div class="calibration-equation"><code data-pixel-target></code><b>→ K₂⁻¹ →</b><code data-normalized-target></code></div>
+          <svg data-normalized-target-svg viewBox="0 0 320 210" role="img" aria-label="Camera 2 normalized z equals 1 image plane"></svg>
+          <label class="focal-control">Focal length <input data-focal="2" type="range" min="250" max="1000" step="5"><output></output></label>
+        </article>
+        <details class="intrinsics-details">
+          <summary>Advanced intrinsics · fx, fy, cx, cy</summary>
+          <div class="intrinsics-editor">
+            <fieldset><legend>K₁</legend>
+              <label>fx <input data-intrinsics="1:fx" type="range" min="250" max="1000" step="5"><output></output></label>
+              <label>fy <input data-intrinsics="1:fy" type="range" min="250" max="1000" step="5"><output></output></label>
+              <label>cx <input data-intrinsics="1:cx" type="range" min="200" max="440" step="2"><output></output></label>
+              <label>cy <input data-intrinsics="1:cy" type="range" min="120" max="300" step="2"><output></output></label>
+            </fieldset>
+            <fieldset><legend>K₂</legend>
+              <label>fx <input data-intrinsics="2:fx" type="range" min="250" max="1000" step="5"><output></output></label>
+              <label>fy <input data-intrinsics="2:fy" type="range" min="250" max="1000" step="5"><output></output></label>
+              <label>cx <input data-intrinsics="2:cx" type="range" min="200" max="440" step="2"><output></output></label>
+              <label>cy <input data-intrinsics="2:cy" type="range" min="120" max="300" step="2"><output></output></label>
+            </fieldset>
+          </div>
+        </details>
+        <p class="z-note"><strong>z = 1 is a coordinate convention, not scene depth.</strong> It turns each calibrated pixel into a canonical ray direction [u, v, 1]ᵀ.</p>
+      </div>
+
+      <section class="essential-bridge">
+        <div class="concepts-workspace-heading compact"><div><span>02 · Reveal</span><h2>Calibration exposes relative pose</h2><p>Two independent paths reach the same Essential Matrix, up to homogeneous scale and sign.</p></div></div>
+        <div class="essential-matrix-flow">
+          <article><span>From pixel geometry</span><h3>E = K₂ᵀ F K₁</h3><pre data-e-from-f></pre></article>
+          <div class="matrix-equivalence"><strong>≈</strong><code data-e-agreement></code><small>scale/sign agreement</small></div>
+          <article><span>From relative pose</span><h3>E = [t]× R</h3><pre data-e-pose></pre></article>
+        </div>
+        <div class="normalized-constraint"><span>normalized epipolar constraint</span><strong>x̂′ᵀ E x̂</strong><code data-normalized-residual></code></div>
+      </section>
+
+      <section class="scale-experiment">
+        <div class="concepts-workspace-heading compact"><div><span>03 · Experiment</span><h2>Stretch the baseline. Keep the epipolar geometry.</h2><p>E recovers translation direction—not metric translation magnitude or global scene scale.</p></div></div>
+        <div class="scale-grid">
+          <article class="baseline-card">
+            <svg data-baseline-svg viewBox="0 0 500 240" role="img" aria-label="Top-down camera baseline scale diagram"></svg>
+            <label class="baseline-control"><span>Baseline multiplier λ</span><input data-baseline-scale type="range" min="0.25" max="2.5" step="0.05"><output></output></label>
+            <div data-essential-warning class="concepts-warning" role="status" hidden></div>
+          </article>
+          <article class="scale-readout">
+            <div><span>raw ‖E‖<sub>F</sub></span><strong data-e-raw-norm></strong><small>scales with λ</small></div>
+            <div><span>raw ‖F‖<sub>F</sub></span><strong data-f-raw-norm></strong><small>scales with λ</small></div>
+            <div class="invariant"><span>canonical E drift</span><strong data-e-drift></strong><small>unchanged</small></div>
+            <div class="invariant"><span>canonical F drift</span><strong data-f-drift></strong><small>same lines</small></div>
+          </article>
+          <article class="dof-five-card">
+            <span>Essential Matrix · 5 DoF</span>
+            <div class="rotation-dof"><strong>3</strong><p>rotation<br><small>roll · pitch · yaw</small></p></div>
+            <b>+</b>
+            <div class="translation-dof"><strong>2</strong><p>translation direction<br><small>azimuth · elevation</small></p></div>
+            <b>=</b><strong class="five">5</strong>
+            <p class="scale-excluded">Baseline magnitude is intentionally outside the count.</p>
+            <code data-translation-direction></code>
+          </article>
+        </div>
+        <div class="essential-singular"><span>Essential singular values</span><code data-essential-singular></code><small>ideal structure: (σ, σ, 0)</small></div>
+      </section>
+
+      <details class="next-concepts">
+        <summary>What comes next? · E to four pose candidates</summary>
+        <div><strong>2 candidate rotations × 2 translation signs = 4 (R, t) candidates</strong><p>Triangulation and a positive-depth (cheirality) test select the physically valid configuration. This focused v1 stops before that decomposition.</p></div>
+      </details>
     </section>
   </main>`;
 
@@ -148,6 +236,23 @@ class ConceptsPage implements Page {
     container.querySelectorAll<HTMLInputElement>('[data-camera]').forEach((input) => {
       input.addEventListener('input', () => this.updateCamera(input.dataset.camera!, Number(input.value)));
     });
+    container.querySelectorAll<HTMLInputElement>('[data-focal]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const which = input.dataset.focal === '1' ? 'intrinsics1' : 'intrinsics2';
+        const value = Number(input.value);
+        this.store.update({ [which]: { ...this.store.getState()[which], fx: value, fy: value } });
+      });
+    });
+    container.querySelectorAll<HTMLInputElement>('[data-intrinsics]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const [camera, field] = input.dataset.intrinsics!.split(':') as ['1' | '2', keyof IntrinsicsControls];
+        const key = camera === '1' ? 'intrinsics1' : 'intrinsics2';
+        this.store.update({ [key]: { ...this.store.getState()[key], [field]: Number(input.value) } });
+      });
+    });
+    container.querySelector<HTMLInputElement>('[data-baseline-scale]')!.addEventListener('input', (event) => {
+      this.store.update({ baselineScale: Number((event.currentTarget as HTMLInputElement).value) });
+    });
     const sourceSvg = container.querySelector<SVGSVGElement>('[data-source-svg]')!;
     const targetSvg = container.querySelector<SVGSVGElement>('[data-target-svg]')!;
     this.bindImageInteraction(sourceSvg, 'source');
@@ -155,7 +260,7 @@ class ConceptsPage implements Page {
     this.store.subscribe((state, snapshot) => {
       buttons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.section === state.section)));
       container.querySelector<HTMLElement>('[data-fundamental]')!.hidden = state.section !== 'fundamental';
-      container.querySelector<HTMLElement>('[data-essential-placeholder]')!.hidden = state.section !== 'essential';
+      container.querySelector<HTMLElement>('[data-essential]')!.hidden = state.section !== 'essential';
       this.render(container, sourceSvg, targetSvg, state, snapshot);
     });
   }
@@ -220,6 +325,12 @@ class ConceptsPage implements Page {
     snapshot: CoreConceptsSnapshot,
   ): void {
     renderImagePair(sourceSvg, targetSvg, snapshot);
+    renderNormalizedPlanes(
+      container.querySelector<SVGSVGElement>('[data-normalized-source-svg]')!,
+      container.querySelector<SVGSVGElement>('[data-normalized-target-svg]')!,
+      snapshot,
+    );
+    renderBaselineDiagram(container.querySelector<SVGSVGElement>('[data-baseline-svg]')!, snapshot);
     container.querySelector<HTMLInputElement>('[data-pencil]')!.checked = state.showPencil;
     const line = snapshot.fundamentalLine;
     container.querySelector<HTMLElement>('[data-line-value]')!.textContent = line ? formatVector(line, 3) : 'undefined';
@@ -269,6 +380,46 @@ class ConceptsPage implements Page {
     container.querySelector<HTMLElement>('[data-matrix-r]')!.textContent = formatMatrix(snapshot.relativeRotation);
     container.querySelector<HTMLElement>('[data-vector-t]')!.textContent = formatVector(snapshot.relativeTranslation);
     container.querySelector<HTMLElement>('[data-epipoles]')!.textContent = `e  = ${snapshot.epipoleSource ? formatVector(snapshot.epipoleSource.homogeneous) : '—'}\ne′ = ${snapshot.epipoleTarget ? formatVector(snapshot.epipoleTarget.homogeneous) : '—'}\nrank(F) = ${snapshot.rank}`;
+    container.querySelector<HTMLElement>('[data-pixel-source]')!.textContent = formatVector(snapshot.sourcePoint, 1);
+    container.querySelector<HTMLElement>('[data-pixel-target]')!.textContent = formatVector(snapshot.targetPoint, 1);
+    container.querySelector<HTMLElement>('[data-normalized-source]')!.textContent = formatVector(snapshot.sourceNormalized, 3);
+    container.querySelector<HTMLElement>('[data-normalized-target]')!.textContent = formatVector(snapshot.targetNormalized, 3);
+    container.querySelectorAll<HTMLInputElement>('[data-focal]').forEach((input) => {
+      const intrinsics = input.dataset.focal === '1' ? state.intrinsics1 : state.intrinsics2;
+      input.value = String(intrinsics.fx);
+      input.nextElementSibling!.textContent = intrinsics.fx === intrinsics.fy
+        ? `${intrinsics.fx.toFixed(0)} px`
+        : `${intrinsics.fx.toFixed(0)} / ${intrinsics.fy.toFixed(0)} px`;
+    });
+    container.querySelectorAll<HTMLInputElement>('[data-intrinsics]').forEach((input) => {
+      const [camera, field] = input.dataset.intrinsics!.split(':') as ['1' | '2', keyof IntrinsicsControls];
+      const intrinsics = camera === '1' ? state.intrinsics1 : state.intrinsics2;
+      input.value = String(intrinsics[field]);
+      input.nextElementSibling!.textContent = intrinsics[field].toFixed(0);
+    });
+    container.querySelector<HTMLElement>('[data-e-from-f]')!.textContent = snapshot.essentialFromF
+      ? formatMatrix(snapshot.essentialFromF) : 'degenerate';
+    container.querySelector<HTMLElement>('[data-e-pose]')!.textContent = snapshot.essentialCanonical
+      ? formatMatrix(snapshot.essentialCanonical) : 'E = 0';
+    container.querySelector<HTMLElement>('[data-e-agreement]')!.textContent = snapshot.essentialAgreement === null
+      ? 'undefined' : snapshot.essentialAgreement.toExponential(2);
+    container.querySelector<HTMLElement>('[data-normalized-residual]')!.textContent = snapshot.normalizedResidual === null
+      ? 'undefined' : snapshot.normalizedResidual.toExponential(3);
+    const scale = container.querySelector<HTMLInputElement>('[data-baseline-scale]')!;
+    scale.value = String(state.baselineScale);
+    scale.nextElementSibling!.textContent = `${state.baselineScale.toFixed(2)}×`;
+    container.querySelector<HTMLElement>('[data-e-raw-norm]')!.textContent = snapshot.essentialRawNorm.toExponential(3);
+    container.querySelector<HTMLElement>('[data-f-raw-norm]')!.textContent = snapshot.fundamentalRawNorm.toExponential(3);
+    container.querySelector<HTMLElement>('[data-e-drift]')!.textContent = snapshot.essentialScaleInvariantError === null
+      ? 'undefined' : snapshot.essentialScaleInvariantError.toExponential(2);
+    container.querySelector<HTMLElement>('[data-f-drift]')!.textContent = snapshot.fundamentalScaleInvariantError === null
+      ? 'undefined' : snapshot.fundamentalScaleInvariantError.toExponential(2);
+    container.querySelector<HTMLElement>('[data-translation-direction]')!.textContent = snapshot.translationDirection
+      ? `t̂ = ${formatVector(snapshot.translationDirection, 3)}` : 't̂ is undefined when t = 0';
+    container.querySelector<HTMLElement>('[data-essential-singular]')!.textContent = formatVector(snapshot.essentialSingularValues, 4);
+    const essentialWarning = container.querySelector<HTMLElement>('[data-essential-warning]')!;
+    essentialWarning.hidden = !snapshot.warning;
+    essentialWarning.textContent = snapshot.warning ?? '';
   }
 
   activate(): void {}

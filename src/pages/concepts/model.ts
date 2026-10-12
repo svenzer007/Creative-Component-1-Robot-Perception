@@ -3,7 +3,7 @@ import type { Pixel } from '../../vision/geometry2d';
 import { CAMERA_1, PRESETS } from '../../state/appState';
 import { cameraPoseFromControls } from '../../math/camera';
 import { calibratedEpipolar, essentialFromFundamental, matrixAgreementUpToScale, normalizeImagePoint } from '../../math/calibratedEpipolar';
-import { dot3, mat3Vec3, norm3, scale3, svd3 } from '../../math/linearAlgebra';
+import { dot3, mat3Vec3, norm3, normalize3, scale3, svd3 } from '../../math/linearAlgebra';
 import {
   clipToImage,
   closestPointOnLine,
@@ -109,6 +109,13 @@ export interface CoreConceptsSnapshot {
   rank: number;
   baselineLength: number;
   essentialAgreement: number | null;
+  normalizedResidual: number | null;
+  essentialSingularValues: Vec3;
+  translationDirection: Vec3 | null;
+  essentialRawNorm: number;
+  fundamentalRawNorm: number;
+  essentialScaleInvariantError: number | null;
+  fundamentalScaleInvariantError: number | null;
   warning: string | null;
 }
 
@@ -127,6 +134,10 @@ export function deriveConcepts(state: CoreConceptsState): CoreConceptsSnapshot {
   const calibrated = calibratedEpipolar(
     { pose: camera1, intrinsics: sourceK },
     { pose: camera2, intrinsics: targetK },
+  );
+  const reference = calibratedEpipolar(
+    { pose: camera1, intrinsics: sourceK },
+    { pose: cameraPoseFromControls(state.camera2), intrinsics: targetK },
   );
   const sourcePoint: Vec3 = [state.sourcePixel[0], state.sourcePixel[1], 1];
   const targetPoint: Vec3 = [state.targetPixel[0], state.targetPixel[1], 1];
@@ -149,6 +160,8 @@ export function deriveConcepts(state: CoreConceptsState): CoreConceptsSnapshot {
     ? essentialFromFundamental(fundamental, sourceK, targetK)
     : null;
   const baselineLength = norm3(calibrated.translation);
+  const sourceNormalized = normalizeImagePoint(sourceK, sourcePoint);
+  const targetNormalized = normalizeImagePoint(targetK, targetPoint);
 
   let warning: string | null = null;
   if (calibrated.status === 'degenerate') {
@@ -167,8 +180,8 @@ export function deriveConcepts(state: CoreConceptsState): CoreConceptsSnapshot {
     targetK,
     sourcePoint,
     targetPoint,
-    sourceNormalized: normalizeImagePoint(sourceK, sourcePoint),
-    targetNormalized: normalizeImagePoint(targetK, targetPoint),
+    sourceNormalized,
+    targetNormalized,
     relativeRotation: calibrated.rotation,
     relativeTranslation: calibrated.translation,
     essentialRaw: calibrated.essentialRaw,
@@ -192,6 +205,21 @@ export function deriveConcepts(state: CoreConceptsState): CoreConceptsSnapshot {
     baselineLength,
     essentialAgreement: essentialFromF
       ? matrixAgreementUpToScale(essentialFromF, calibrated.essentialRaw)
+      : null,
+    normalizedResidual: calibrated.essentialCanonical
+      ? dot3(targetNormalized, mat3Vec3(calibrated.essentialCanonical, sourceNormalized))
+      : null,
+    essentialSingularValues: calibrated.essentialCanonical
+      ? svd3(calibrated.essentialCanonical).singularValues
+      : [0, 0, 0],
+    translationDirection: normalize3(calibrated.translation),
+    essentialRawNorm: matrixNorm(calibrated.essentialRaw),
+    fundamentalRawNorm: matrixNorm(calibrated.fundamentalRaw),
+    essentialScaleInvariantError: reference.essentialCanonical && calibrated.essentialCanonical
+      ? matrixAgreementUpToScale(reference.essentialCanonical, calibrated.essentialCanonical)
+      : null,
+    fundamentalScaleInvariantError: reference.fundamentalCanonical && calibrated.fundamentalCanonical
+      ? matrixAgreementUpToScale(reference.fundamentalCanonical, calibrated.fundamentalCanonical)
       : null,
     warning,
   };
