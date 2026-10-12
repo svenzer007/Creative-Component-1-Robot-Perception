@@ -28,15 +28,19 @@ describe('Core Concepts page', () => {
     page.mount(container);
     expect(container.querySelector('h1')?.textContent).toContain('Core Concepts of Epipolar Geometry');
     expect(container.querySelector('.concepts-symbols')?.textContent).toContain('Lowercase e/e′');
-    expect(container.textContent).toContain('One point constrains its match to one line');
+    expect(container.textContent).toContain('A point in Image 1 constrains its match in Image 2 to one line');
     expect(container.textContent).toContain('Constraint error');
     expect(container.textContent).toContain('Distance to epipolar line');
+    expect(container.textContent).toContain('Pixel x defines a 3D viewing ray');
+    expect(container.textContent).toContain('algebraic residual');
+    expect(container.textContent).toContain('geometric pixel distance');
     expect(container.textContent).toContain('Show several epipolar lines');
     const presets = [...container.querySelectorAll<HTMLButtonElement>('.concepts-presets [data-preset]')];
     expect(presets.map((button) => button.dataset.preset)).toEqual(['forward', 'general', 'rectified', 'nearRotation']);
     expect(presets[0].classList.contains('is-active')).toBe(true);
-    expect(container.querySelectorAll('.concepts-deep-dive')).toHaveLength(2);
-    expect(container.querySelector('.concepts-proof-card')?.textContent).toContain('same baseline');
+    expect(container.querySelectorAll('[data-fundamental] .concepts-deep-dive')).toHaveLength(3);
+    expect(container.querySelectorAll('.concepts-proof-card')[1]?.textContent).toContain('contains the baseline');
+    expect(container.querySelector('.concepts-preset-panel .concepts-preset-description')).not.toBeNull();
   });
 
   it('supports keyboard nudging and pointer selection', () => {
@@ -85,11 +89,22 @@ describe('Core Concepts page', () => {
     scale.value = '2';
     scale.dispatchEvent(new Event('input', { bubbles: true }));
     expect(scale.nextElementSibling?.textContent).toBe('2.00×');
+    expect(container.querySelectorAll('.concepts-presets .is-active')).toHaveLength(1);
+    expect(container.querySelector('[data-preset-description]')?.textContent).not.toContain('Custom pose');
     const cameraX = container.querySelector<HTMLInputElement>('[data-camera="x"]')!;
     cameraX.value = '2.1';
     cameraX.dispatchEvent(new Event('input', { bubbles: true }));
     expect(scale.value).toBe('1');
     expect(scale.nextElementSibling?.textContent).toBe('1.00×');
+    expect(scale.getAttribute('value')).toBe('1');
+    expect(scale.getAttribute('aria-valuenow')).toBe('1');
+    expect(scale.getAttribute('aria-valuetext')).toBe('1.00 times baseline');
+    expect(container.querySelectorAll('.concepts-presets .is-active')).toHaveLength(0);
+    expect(container.querySelector('[data-preset-description]')?.textContent).toContain('Custom pose');
+    expect(container.querySelector('[data-notice]')?.textContent).toContain('custom Camera 2 pose');
+    container.querySelector<HTMLButtonElement>('[data-preset="forward"]')!.click();
+    expect(container.querySelector('[data-preset-description]')?.textContent).toContain('Forward motion');
+    expect(container.querySelectorAll('.concepts-presets .is-active')).toHaveLength(1);
   });
 
   it('updates normalized coordinates from focal and principal-point controls', () => {
@@ -109,6 +124,25 @@ describe('Core Concepts page', () => {
     cx.value = '280';
     cx.dispatchEvent(new Event('input', { bubbles: true }));
     expect(container.querySelector<HTMLElement>('[data-normalized-source]')!.textContent).not.toBe(afterFocal);
+  });
+
+  it('connects calibration to Essential geometry and relative pose without crowding the main flow', () => {
+    const page = createPage();
+    const container = document.createElement('section');
+    page.mount(container);
+    container.querySelector<HTMLButtonElement>('[data-section="essential"]')!.click();
+    expect(container.querySelector('[data-stage-intro]')?.textContent).toContain('F constrains pixels');
+    expect(container.querySelector('.intrinsics-key')?.textContent).toContain('principal point');
+    expect(container.querySelector('[data-normalized-source-svg]')?.textContent).toContain('ray direction [u, v, 1]');
+    expect(container.querySelector('.concepts-derivation')?.textContent).toContain('x̂′ᵀK₂ᵀFK₁x̂ = 0');
+    expect(container.querySelector('.pose-recovery-flow')?.textContent).toContain('decompose E');
+    expect(container.querySelector('.pose-key')?.textContent).toContain('raw relative translation');
+    expect(container.querySelector('.normalized-constraint')?.textContent).toContain('Zero only when');
+    expect(container.querySelector('.scale-readout')?.textContent).toContain('E matrix magnitude');
+    expect(container.querySelector('.scale-readout')?.textContent).toContain('Normalized E change');
+    expect(container.querySelector('.essential-constraints')?.tagName).toBe('DETAILS');
+    expect(container.querySelector('.essential-constraints')?.hasAttribute('open')).toBe(false);
+    expect(container.querySelector('.next-concepts')?.textContent).toContain('translation length is still not recovered');
   });
 
   it('renders accessible epipole descriptions for the current preset', () => {
@@ -132,5 +166,7 @@ describe('Core Concepts page', () => {
     expect(links.map((link) => link.getAttribute('href'))).toEqual(['#/photos', '#/lab']);
     expect(container.querySelector('.estimation-flow')?.textContent).toContain('Af = 0');
     expect(container.querySelector('.estimation-flow')?.textContent).toContain('rank(F) = 2');
+    expect(container.querySelector('.concepts-bridge summary')?.textContent).toContain('F and relative pose');
+    expect(container.querySelector('.supporting-pose-flow')?.textContent).toContain('relative R and t̂');
   });
 });

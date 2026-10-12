@@ -144,6 +144,7 @@ export function renderNormalizedPlanes(
       <line class="normalized-ray" x1="160" y1="105" x2="${x}" y2="${y}"/>
       <circle class="normalized-point ${role}" cx="${x}" cy="${y}" r="7"/>
       <text class="normalized-label" x="${x + 11}" y="${y - 9}">${roleLabel}</text>
+      <text class="normalized-direction" x="12" y="18">ray direction [u, v, 1]ᵀ</text>
       <text class="normalized-z" x="12" y="194">normalized plane · z = 1</text>`;
   };
   sourceSvg.innerHTML = render(snapshot.sourceNormalized, 'source');
@@ -163,14 +164,24 @@ export function renderBaselineDiagram(svg: SVGSVGElement, snapshot: CoreConcepts
   const yaw = snapshot.state.camera2.yawDegrees * Math.PI / 180;
   const headingX = Math.sin(yaw) * 25;
   const headingY = -Math.cos(yaw) * 25;
+  const perpendicularX = -directionY * 11;
+  const perpendicularY = directionX * 11;
+  const translationEndX = targetX - directionX * Math.min(72, visibleLength * 0.55);
+  const translationEndY = targetY - directionY * Math.min(72, visibleLength * 0.55);
   svg.innerHTML = `
-    <defs><marker id="baseline-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z"/></marker></defs>
+    <defs>
+      <marker id="baseline-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z"/></marker>
+      <marker id="translation-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 10 5 0 10z"/></marker>
+    </defs>
     <g class="pose-orbits"><circle cx="${centerX}" cy="${centerY}" r="58"/><circle cx="${centerX}" cy="${centerY}" r="116"/><circle cx="${centerX}" cy="${centerY}" r="174"/></g>
     <line class="baseline-line" x1="${centerX}" y1="${centerY}" x2="${targetX}" y2="${targetY}" marker-end="url(#baseline-arrow)"/>
     <circle class="pose-camera source" cx="${centerX}" cy="${centerY}" r="10"/>
     <text class="pose-label source" x="${centerX - 27}" y="${centerY + 30}">C₁</text>
     <circle class="pose-camera target" cx="${targetX}" cy="${targetY}" r="10"/>
     <line class="camera-heading" x1="${targetX}" y1="${targetY}" x2="${targetX + headingX}" y2="${targetY + headingY}"/>
+    <text class="rotation-label" x="${targetX + headingX + 7}" y="${targetY + headingY}">R</text>
+    <line class="translation-direction" x1="${targetX + perpendicularX}" y1="${targetY + perpendicularY}" x2="${translationEndX + perpendicularX}" y2="${translationEndY + perpendicularY}" marker-end="url(#translation-arrow)"/>
+    <text class="translation-label" x="${(targetX + translationEndX) / 2 + perpendicularX}" y="${(targetY + translationEndY) / 2 + perpendicularY - 7}">t̂ · C₂ frame</text>
     <text class="pose-label target" x="${targetX + 13}" y="${targetY + 5}">C₂</text>
     <text class="baseline-label" x="${(centerX + targetX) / 2}" y="${(centerY + targetY) / 2 - 10}">λ = ${snapshot.state.baselineScale.toFixed(2)}×</text>`;
 }

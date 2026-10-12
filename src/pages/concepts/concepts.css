@@ -30,15 +30,16 @@
 .concepts-page .concepts-workspace { margin-top: 22px; }
 .concepts-page .concepts-workspace-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 18px 2px 16px; }
 .concepts-page .concepts-workspace-heading > div:first-child { max-width: 710px; }
-.concepts-page .concepts-workspace-heading span { display: block; margin-bottom: 7px; color: var(--c1); font: 800 .64rem ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
+.concepts-page .concepts-workspace-heading span { display: block; margin-bottom: 9px; color: var(--c1); font: 900 .72rem ui-monospace, monospace; letter-spacing: .13em; text-transform: uppercase; }
 .concepts-page .concepts-workspace-heading h2 { margin: 0 0 7px; font-size: clamp(1.35rem, 2.5vw, 2rem); letter-spacing: -.035em; }
 .concepts-page .concepts-workspace-heading p { margin: 0; color: var(--muted); font-size: .83rem; line-height: 1.55; }
 .concepts-page .concepts-workspace-heading strong { color: var(--text); }
 .concepts-page .concepts-workspace-heading .concepts-try { margin-top: 7px; color: #b6c3d4; }
+.concepts-page .concepts-preset-panel { display: grid; gap: 8px; width: min(100%, 470px); }
 .concepts-page .concepts-presets { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 .concepts-page .concepts-presets button { padding: 7px 10px; color: var(--muted); font-size: .68rem; }
 .concepts-page .concepts-presets button.is-active { border-color: rgba(255, 184, 77, .7); background: rgba(255, 184, 77, .1); color: var(--c2); }
-.concepts-page .concepts-preset-description { margin: -7px 2px 13px; border-left: 2px solid var(--c2); padding-left: 9px; color: #a9b6c8; font-size: .67rem; line-height: 1.45; }
+.concepts-page .concepts-preset-description { margin: 0; border-left: 2px solid var(--c2); padding-left: 9px; color: #a9b6c8; font-size: .67rem; line-height: 1.45; }
 .concepts-page .concepts-main-grid { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 16px; align-items: start; }
 .concepts-page .concepts-image-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-width: 0; }
 .concepts-page .concept-image-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: rgba(12, 17, 26, .92); }
@@ -104,7 +105,7 @@
 .concepts-page .concepts-link:hover { background: rgba(82, 214, 255, .05); }
 .concepts-page .concepts-reveal { margin-top: 22px; }
 .concepts-page .concepts-workspace-heading.compact { padding-bottom: 13px; }
-.concepts-page .concepts-reveal-grid { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 12px; }
+.concepts-page .concepts-reveal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .concepts-page .concepts-reveal-grid article { min-width: 0; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); padding: 17px; }
 .concepts-page .concepts-deep-dive { overflow: hidden; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); }
 .concepts-page .concepts-deep-dive summary { min-height: 100%; padding: 17px; cursor: pointer; color: #d5dfec; font-size: .72rem; font-weight: 800; line-height: 1.45; }
@@ -125,6 +126,10 @@
 .concepts-page .singular-bars i { height: 7px; overflow: hidden; border-radius: 8px; background: #202b3e; }
 .concepts-page .singular-bars b { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--c1), var(--plane)); }
 .concepts-page .concepts-singular-card p { margin: 0 0 12px; color: var(--muted); font-size: .66rem; }
+.concepts-page .concepts-constraint-card p { margin: 0 0 10px; color: var(--muted); font-size: .67rem; line-height: 1.55; }
+.concepts-page .concepts-constraint-card p:last-child { margin-bottom: 0; }
+.concepts-page .concepts-constraint-card code { color: var(--epiline); font: .68rem ui-monospace, monospace; }
+.concepts-page .concepts-constraint-card strong { color: var(--text); }
 .concepts-page .null-checks { display: flex; gap: 8px; flex-wrap: wrap; }
 .concepts-page .null-checks code { border: 1px solid var(--line); border-radius: 5px; padding: 5px 7px; }
 .concepts-page .concepts-dof-card { display: grid; grid-template-columns: repeat(7, auto); align-items: center; gap: 8px; }
@@ -142,6 +147,9 @@
 .concepts-page .concepts-matrix-grid pre { margin: 8px 0 0; color: #dce8f7; font: .62rem/1.65 ui-monospace, monospace; white-space: pre-wrap; }
 
 .concepts-page .concepts-essential { margin-top: 22px; }
+.concepts-page .intrinsics-key { display: flex; flex-wrap: wrap; gap: 8px; margin: -4px 2px 14px; }
+.concepts-page .intrinsics-key span { border: 1px solid rgba(159, 134, 255, .22); border-radius: 999px; background: rgba(159, 134, 255, .045); padding: 7px 10px; color: var(--muted); font-size: .63rem; }
+.concepts-page .intrinsics-key strong { margin-right: 5px; color: var(--plane); }
 .concepts-page .calibration-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .concepts-page .calibration-card { overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 .concepts-page .calibration-card header { display: flex; justify-content: space-between; gap: 12px; padding: 12px 15px; border-bottom: 1px solid var(--line); }
@@ -161,6 +169,7 @@
 .concepts-page .normalized-point.source { fill: var(--c1); }
 .concepts-page .normalized-point.target { fill: var(--c2); }
 .concepts-page .normalized-label { fill: var(--plane); paint-order: stroke; stroke: #090e16; stroke-width: 4px; font: 700 13px ui-monospace, monospace; }
+.concepts-page .normalized-direction { fill: var(--plane); font: 10px ui-monospace, monospace; }
 .concepts-page .normalized-z { fill: #71829a; font: 10px ui-monospace, monospace; }
 .concepts-page .focal-control { display: grid; grid-template-columns: 90px 1fr 72px; gap: 9px; align-items: center; padding: 12px 15px; color: var(--muted); font-size: .62rem; }
 .concepts-page .focal-control input { min-width: 0; accent-color: var(--plane); }
@@ -182,6 +191,19 @@
 .concepts-page .calibration-insight small { color: #aeb9c9; font-size: .59rem; }
 .concepts-page .essential-bridge,
 .concepts-page .scale-experiment { margin-top: 22px; }
+.concepts-page .pose-recovery-flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; gap: 8px; align-items: center; margin-bottom: 10px; }
+.concepts-page .pose-recovery-flow > div { display: grid; gap: 4px; min-height: 72px; align-content: center; border: 1px solid rgba(159, 134, 255, .22); border-radius: 10px; background: rgba(159, 134, 255, .045); padding: 10px 12px; }
+.concepts-page .pose-recovery-flow strong { color: #e3dcff; font: 750 .7rem ui-monospace, monospace; }
+.concepts-page .pose-recovery-flow small { color: var(--muted); font-size: .56rem; line-height: 1.35; }
+.concepts-page .pose-recovery-flow > i { color: var(--plane); font-style: normal; }
+.concepts-page .concepts-derivation { margin-bottom: 10px; border: 1px solid var(--line); border-radius: 11px; background: #0c111a; }
+.concepts-page .concepts-derivation summary { padding: 11px 14px; cursor: pointer; color: #d9d0ff; font-size: .68rem; font-weight: 800; }
+.concepts-page .concepts-derivation p { margin: 0; padding: 0 14px 13px; color: var(--muted); font-size: .66rem; line-height: 1.6; }
+.concepts-page .concepts-derivation code { color: var(--plane); font: .66rem ui-monospace, monospace; }
+.concepts-page .pose-key { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.concepts-page .pose-key span { border-left: 2px solid var(--plane); background: rgba(159, 134, 255, .04); padding: 9px 11px; color: var(--muted); font-size: .64rem; }
+.concepts-page .pose-key strong { margin-right: 5px; color: var(--plane); font: 750 .8rem Georgia, serif; }
+.concepts-page .pose-key small { grid-column: 1 / -1; color: #9eabc0; font-size: .6rem; }
 .concepts-page .essential-matrix-flow { display: grid; grid-template-columns: 1fr 110px 1fr; gap: 12px; align-items: stretch; }
 .concepts-page .essential-matrix-flow article { border: 1px solid var(--line); border-radius: 13px; background: var(--surface); padding: 16px; }
 .concepts-page .essential-matrix-flow article > span { color: var(--muted); font-size: .59rem; letter-spacing: .1em; text-transform: uppercase; }
@@ -191,10 +213,11 @@
 .concepts-page .matrix-equivalence strong { color: var(--epiline); font: 2rem Georgia, serif; }
 .concepts-page .matrix-equivalence code { color: var(--epiline); font: .61rem ui-monospace, monospace; }
 .concepts-page .matrix-equivalence small { margin-top: 4px; color: var(--muted); font-size: .53rem; }
-.concepts-page .normalized-constraint { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; margin-top: 10px; border: 1px solid rgba(159, 134, 255, .24); border-radius: 11px; background: rgba(159, 134, 255, .05); padding: 12px 15px; }
+.concepts-page .normalized-constraint { display: grid; grid-template-columns: 1fr auto auto minmax(180px, .8fr); gap: 12px; align-items: center; margin-top: 10px; border: 1px solid rgba(159, 134, 255, .24); border-radius: 11px; background: rgba(159, 134, 255, .05); padding: 12px 15px; }
 .concepts-page .normalized-constraint span { color: var(--muted); font-size: .61rem; letter-spacing: .08em; text-transform: uppercase; }
 .concepts-page .normalized-constraint strong { font-family: Georgia, serif; }
 .concepts-page .normalized-constraint code { color: var(--plane); font: .7rem ui-monospace, monospace; }
+.concepts-page .normalized-constraint small { color: var(--muted); font-size: .57rem; line-height: 1.4; }
 .concepts-page .scale-grid { display: grid; grid-template-columns: 1.35fr .85fr; gap: 12px; }
 .concepts-page .scale-grid > article { min-width: 0; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); }
 .concepts-page .baseline-card { overflow: hidden; }
@@ -206,11 +229,17 @@
 .concepts-page .pose-camera.source { fill: var(--c1); stroke: #e5faff; }
 .concepts-page .pose-camera.target { fill: var(--c2); stroke: #fff1d6; }
 .concepts-page .camera-heading { stroke: var(--c2); stroke-width: 3; }
+.concepts-page .translation-direction { stroke: var(--plane); stroke-width: 2; stroke-dasharray: 5 4; }
+.concepts-page #translation-arrow path { fill: var(--plane); }
 .concepts-page .pose-label,
-.concepts-page .baseline-label { paint-order: stroke; stroke: #090e16; stroke-width: 4px; font: 700 13px ui-monospace, monospace; }
+.concepts-page .baseline-label,
+.concepts-page .rotation-label,
+.concepts-page .translation-label { paint-order: stroke; stroke: #090e16; stroke-width: 4px; font: 700 13px ui-monospace, monospace; }
 .concepts-page .pose-label.source { fill: var(--c1); }
 .concepts-page .pose-label.target { fill: var(--c2); }
 .concepts-page .baseline-label { fill: var(--epiline); text-anchor: middle; }
+.concepts-page .rotation-label { fill: var(--c2); }
+.concepts-page .translation-label { fill: var(--plane); text-anchor: middle; font-size: 10px; }
 .concepts-page .baseline-control { display: grid; grid-template-columns: 115px 1fr 52px; gap: 10px; align-items: center; padding: 13px 15px; border-top: 1px solid var(--line); color: var(--muted); font-size: .62rem; }
 .concepts-page .baseline-control input { min-width: 0; accent-color: var(--epiline); }
 .concepts-page .baseline-control output { text-align: right; color: var(--epiline); font: .62rem ui-monospace, monospace; }
@@ -234,7 +263,9 @@
 .concepts-page .dof-five-card .five { color: var(--plane); }
 .concepts-page .dof-five-card .scale-excluded { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 11px; color: var(--muted); }
 .concepts-page .dof-five-card > code { grid-column: 1 / -1; color: var(--plane); font: .61rem/1.4 ui-monospace, monospace; overflow-wrap: anywhere; }
-.concepts-page .essential-singular { display: flex; align-items: center; gap: 12px; margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; background: #0c111a; padding: 11px 14px; }
+.concepts-page .essential-constraints { margin-top: 10px; }
+.concepts-page .essential-singular { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 12px; margin: 0; background: #0c111a; padding: 13px 14px; }
+.concepts-page .essential-singular p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: .65rem; line-height: 1.5; }
 .concepts-page .essential-singular span { color: var(--muted); font-size: .61rem; }
 .concepts-page .essential-singular code { color: var(--plane); font: .65rem ui-monospace, monospace; }
 .concepts-page .essential-singular small { margin-left: auto; color: var(--epiline); font-size: .57rem; }
@@ -250,12 +281,14 @@
 .concepts-page .concepts-bridge summary span { color: var(--c1); font: 800 .58rem ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; }
 .concepts-page .concepts-bridge summary strong { font-size: .82rem; }
 .concepts-page .concepts-bridge summary small { color: var(--muted); font-size: .61rem; }
+.concepts-page .concepts-bridge h3 { margin: 2px 17px 10px; color: #dce7f6; font-size: .72rem; }
 .concepts-page .estimation-flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto 1fr; gap: 8px; align-items: center; padding: 2px 17px 15px; }
 .concepts-page .estimation-flow > div { display: grid; gap: 5px; min-height: 94px; align-content: center; border: 1px solid var(--line); border-radius: 9px; background: rgba(8, 11, 18, .72); padding: 10px; }
 .concepts-page .estimation-flow b { width: 20px; height: 20px; display: grid; place-content: center; border-radius: 50%; background: rgba(82, 214, 255, .12); color: var(--c1); font: .58rem ui-monospace, monospace; }
 .concepts-page .estimation-flow span { color: var(--muted); font-size: .57rem; }
 .concepts-page .estimation-flow code { color: var(--epiline); font: .65rem ui-monospace, monospace; }
 .concepts-page .estimation-flow > i { color: var(--muted); font-style: normal; }
+.concepts-page .supporting-pose-flow { margin: 0 17px 15px; }
 .concepts-page .concepts-bridge details > p { max-width: 100ch; margin: 0; padding: 0 17px 15px; color: var(--muted); font-size: .68rem; line-height: 1.5; }
 .concepts-page .bridge-actions { display: flex; gap: 8px; padding: 0 17px 17px; }
 .concepts-page .bridge-actions a { display: inline-flex; justify-content: space-between; gap: 22px; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; color: var(--c1); font-size: .66rem; font-weight: 750; text-decoration: none; }
@@ -266,6 +299,7 @@
   .concepts-page .concepts-hero { align-items: stretch; flex-direction: column; }
   .concepts-page .concepts-switch { display: grid; grid-template-columns: 1fr 1fr; }
   .concepts-page .concepts-workspace-heading { align-items: stretch; flex-direction: column; }
+  .concepts-page .concepts-preset-panel { width: 100%; }
   .concepts-page .concepts-presets { justify-content: flex-start; }
   .concepts-page .concepts-main-grid { grid-template-columns: 1fr; }
   .concepts-page .concepts-image-pair { grid-template-columns: 1fr; }
@@ -281,6 +315,10 @@
   .concepts-page .calibration-insight { grid-template-columns: 1fr; }
   .concepts-page .intrinsics-editor { grid-template-columns: 1fr; }
   .concepts-page .essential-matrix-flow { grid-template-columns: 1fr; }
+  .concepts-page .pose-recovery-flow { grid-template-columns: 1fr; }
+  .concepts-page .pose-recovery-flow > i { transform: rotate(90deg); text-align: center; }
+  .concepts-page .pose-key { grid-template-columns: 1fr; }
+  .concepts-page .pose-key small { grid-column: auto; }
   .concepts-page .matrix-equivalence { min-height: 88px; }
   .concepts-page .normalized-constraint { grid-template-columns: 1fr; }
   .concepts-page .scale-grid { grid-template-columns: 1fr; }
