@@ -97,19 +97,30 @@ export function clipLineToSquare(
   minimum = VIEW_MIN,
   maximum = VIEW_MAX,
 ): readonly [Vec3, Vec3] | null {
+  return clipLineToRect(line, minimum, minimum, maximum, maximum);
+}
+
+/** Clips the homogeneous line ax + by + c = 0 to an axis-aligned rectangle. */
+export function clipLineToRect(
+  line: Vec3,
+  minX: number,
+  minY: number,
+  maxX: number,
+  maxY: number,
+): readonly [Vec3, Vec3] | null {
   const [a, b, c] = line;
   const points: Vec3[] = [];
   const addIfValid = (u: number, v: number): void => {
-    if (u < minimum - EPSILON || u > maximum + EPSILON || v < minimum - EPSILON || v > maximum + EPSILON) return;
+    if (u < minX - EPSILON || u > maxX + EPSILON || v < minY - EPSILON || v > maxY + EPSILON) return;
     if (!points.some((point) => Math.hypot(point[0] - u, point[1] - v) < 1e-8)) points.push([u, v, 1]);
   };
   if (Math.abs(b) > EPSILON) {
-    addIfValid(minimum, -(a * minimum + c) / b);
-    addIfValid(maximum, -(a * maximum + c) / b);
+    addIfValid(minX, -(a * minX + c) / b);
+    addIfValid(maxX, -(a * maxX + c) / b);
   }
   if (Math.abs(a) > EPSILON) {
-    addIfValid(-(b * minimum + c) / a, minimum);
-    addIfValid(-(b * maximum + c) / a, maximum);
+    addIfValid(-(b * minY + c) / a, minY);
+    addIfValid(-(b * maxY + c) / a, maxY);
   }
   return points.length >= 2 ? [points[0], points[1]] : null;
 }

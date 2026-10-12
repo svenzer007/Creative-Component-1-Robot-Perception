@@ -139,6 +139,8 @@ export class GeometryScene {
   private readonly controls: OrbitControls;
   private readonly dynamic = new THREE.Group();
   private readonly resizeObserver: ResizeObserver;
+  private running = false;
+  private frame = 0;
 
   constructor(private readonly host: HTMLElement) {
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -168,7 +170,14 @@ export class GeometryScene {
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(host);
     this.resize();
-    this.animate();
+  }
+
+  /** Starts or stops the render loop; the lab page stops it while another tab is open. */
+  setActive(active: boolean): void {
+    if (active === this.running) return;
+    this.running = active;
+    if (active) this.frame = requestAnimationFrame(this.animate);
+    else cancelAnimationFrame(this.frame);
   }
 
   resetView(): void {
@@ -272,7 +281,8 @@ export class GeometryScene {
   }
 
   private animate = (): void => {
-    requestAnimationFrame(this.animate);
+    if (!this.running) return;
+    this.frame = requestAnimationFrame(this.animate);
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
     this.labelRenderer.render(this.scene, this.camera);

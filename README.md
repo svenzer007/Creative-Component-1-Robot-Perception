@@ -1,10 +1,13 @@
 # Epipolar Geometry Lab
 
-An interactive 3D teaching lab for **NYU Tandon ROB-GY 6203 Robot Perception — Creative Component 1**. The application develops the core idea of epipolar geometry visually before introducing its algebra.
+An interactive teaching lab for **NYU Tandon ROB-GY 6203 Robot Perception — Creative Component 1**. The application develops the core idea of epipolar geometry visually before introducing its algebra.
 
 **Core question:** Given a point in one image, where can its correspondence be in the second image?
 
-Phase 1 uses synthetic normalized cameras. It contains no uploaded photographs and does not estimate a fundamental matrix from image data.
+The app has two tabs, linked from the bar at the top of every page:
+
+- **3D lab** (`#/lab`, the landing page): synthetic normalized cameras in a 3D scene. It builds the epipolar plane and line step by step and checks the geometry against `F`.
+- **Photo lab** (`#/photos`): the same constraint on real images. Upload or take 2–4 photos of one scene (or start from a built-in ray-traced room), and the app estimates `F` on your device. Point at anything and its epipolar line appears in every other photo.
 
 ## Conceptual walkthrough
 
@@ -89,7 +92,7 @@ The Three.js epipolar line is the actual intersection of these two world planes.
 
 `ml-matrix` supplies the SVD used for rank and null spaces. It is isolated in a small adapter; the rest of the 3-vector and 3×3 operations are local and explicit.
 
-## Using the interactive lab
+## Using the 3D lab
 
 ### 3D navigation
 
@@ -124,6 +127,50 @@ Enable **Show family of epipolar planes** to reveal four additional rays and tra
 
 The primary cards keep `x`, `x′`, `l′ = Fx`, and the actual `x′ᵀFx` residual visible. Expand **Advanced matrices and verification** for `Rrel`, `trel`, `F`, singular values, numerical rank, epipoles, baseline length, and the independent 3D/F line-agreement error.
 
+## Photo lab
+
+The Photo lab opens on a **sample room**: four views ray-traced in the browser from known cameras. Because its geometry is exact, every estimate there can be checked against the truth. Replace it with your own photos at any time; nothing is uploaded or stored, and pixels live only in memory.
+
+### From photos to F
+
+All processing runs in a Web Worker so the page stays responsive:
+
+1. Photos are decoded with their EXIF orientation and scaled to at most 1280 px on the long side.
+2. **AKAZE** keypoints and binary descriptors come from OpenCV.js 4.12 (WebAssembly). It is downloaded once, only when real analysis first runs.
+3. Matches pass Lowe's ratio test and a mutual-best check.
+4. **This project's own TypeScript** estimates `F` for every pair of views: MSAC RANSAC over minimal samples of the normalized eight-point algorithm (Hartley normalization, rank-2 enforcement), then least-squares refits on the consensus set. OpenCV.js does not export `findFundamentalMat`; writing it here keeps every step inspectable and tested.
+5. A homography is fitted as well, and an ORB-SLAM-style score compares the two models. When one homography explains the matches, the photos were taken from one spot or show a flat scene, so `F` is poorly defined and the app says so. This is the photo version of the 3D lab's Near rotation preset.
+
+Small residuals alone cannot certify `F`: inliers bunched on one wall fit a wrong model perfectly. Each pair is rated strong, fair, or unreliable from its inlier count, the share of the frame the inliers cover, and the degeneracy check. Like the 3D lab's verified badge, the math card reports honest numbers:
+
+- the RMS Sampson error
+- a **held-out error** from inliers the fit never saw
+- in the sample room, the median distance from the drawn lines to the true correspondences
+
+### Exploring
+
+- **Live scan:** move the pointer over any photo and its epipolar line follows in every other photo.
+- **Pins:** click or tap to pin up to four points; drag a pin to move it. On touch screens a magnifier shows the pixels under your finger. Arrow keys nudge the active pin.
+- **Search along the line:** an 11 × 11 patch slides along `l′` with normalized cross-correlation. The profile shows the 2D search becoming a 1D search, and the card says when texture is flat, repetitive, or hidden. *Use as match* accepts the best peak.
+- **Choosing x′:** click near a pin's line in another photo to place its match exactly on that line.
+- **Three or four photos:** once a match is chosen, each remaining photo shows two epipolar lines, one from each view. They cross at the predicted point `x″ = (F₃₁x) × (F₃₂x′)`. The crossing angle is shown, because transfer fails near the trifocal plane through the three camera centers.
+- **Layers:** epipoles, with edge chips when they fall off the frame or near infinity; the pencil of corresponding lines through both epipoles (the 3D lab's book of planes on images); and inlier and outlier matches.
+- **Mark matches:** click a point in one photo, then the same point in another. With 8 or more pairs, `F` comes from a least-squares eight-point fit through your clicks alone, and each click shows its own residual. This is the fallback when automatic matching fails.
+
+### Taking photos
+
+*Take photos* opens a guided camera:
+
+- **Ghost overlay:** the previous shot is overlaid on the viewfinder, so the scene stays framed while you move.
+- **Live parallax meter:** about once a second it matches the live view against that shot. It reports one of three states: not enough overlap, *you turned in place*, or *good baseline*. With a good baseline the shutter turns green.
+- **After-shot check:** each new photo gets an inlier count.
+
+The camera needs HTTPS (GitHub Pages provides it) or localhost. Where live capture is unavailable, the dialog falls back to the device's own camera app. Photos can also be uploaded, dropped onto the page, or pasted. HEIC files open in Safari; other browsers ask for a JPEG.
+
+### Good photos
+
+Step sideways between shots rather than turning, choose a textured static scene (shelves, posters, plants), and keep people out of it. Low texture, repeated patterns, moving objects, very wide viewpoint changes, and strong lens distortion all weaken or break the estimate. The quality checks above are there to say so.
+
 ## Recommended 2–4 minute narration
 
 1. Start **Explain mode**. On Stage 1, drag `x` and emphasize that one pixel defines a ray.
@@ -139,7 +186,7 @@ Explain mode changes visibility layers in the live scene; it does not replace th
 
 ## Development setup
 
-Requires Node.js 22 or newer.
+Requires Node.js 22.12 or newer (Vite 8's native bundler binding is skipped on older releases, which breaks `npm test`, `npm run dev`, and `npm run build`).
 
 ```bash
 npm install
@@ -157,13 +204,40 @@ The development server normally appears at `http://localhost:5173/Creative-Compo
 
 ```text
 src/
-  main.ts                  application layout and composition root
-  styles.css               responsive scientific interface
+  main.ts                  starts the router and the app shell
+  styles.css               shared tokens and the 3D lab's interface
   types.ts                 shared state and geometry contracts
+  app/
+    router.ts              hash routes (#/lab, #/photos) with canonical fallback
+    routes.ts              the tab list; one entry per lab
+    shell.ts, shell.css    route bar, lazy page mounting, keep-alive, transitions
+    page.ts                mount / activate / deactivate contract for tabs
+  pages/
+    lab/labPage.ts         the 3D lab, mounted as a tab
+    photos/
+      photoPage.ts         the Photo lab tab
+      photoLab.ts          controller: loading, analysis, gestures, rendering
+      photoFrame.ts        one camera frame: photo, overlay, markers, loupe
+      panels.ts            pipeline rail, search, math, and manual-match cards
+      cameraDialog.ts      guided capture with ghost overlay and parallax meter
+      imageSources.ts      decoding uploads, drops, pastes, and camera frames
+      sampleTruth.ts       exact correspondences in the sample room
+      model.ts             pure helpers: F lookup, coordinates, manual fits
   math/
     linearAlgebra.ts       local vector/matrix operations and SVD adapter
     camera.ts              world/camera transforms and projection
     epipolar.ts            F, epipoles, planes, intersection, clipping
+  vision/
+    fundamental.ts         normalized eight-point, rank 2, Sampson, exact F
+    ransac.ts              MSAC for F and H, model selection, held-out error
+    homography.ts          normalized DLT
+    geometry2d.ts          image lines, epipoles, three-view transfer
+    ncc.ts                 correlation search along an epipolar line
+    features.ts            OpenCV.js adapter: AKAZE/ORB and matching only
+    opencvLoader.ts        on-demand download of opencv.js as a static asset
+    pipeline.ts            features → matches → F for every view pair
+    worker.ts, protocol.ts, visionClient.ts   off-main-thread processing
+    syntheticScene.ts      ray-traced four-camera sample room
   state/appState.ts        presets, single source of truth, derived snapshot
   scene/createScene.ts     Three.js visualization and labels
   ui/
@@ -174,7 +248,7 @@ src/
     presentation.ts        eight-stage Explain mode
 ```
 
-Tests live beside the modules they verify.
+Tests live beside the modules they verify. Adding a tab means one entry in `src/app/routes.ts` plus a module under `src/pages` that exports `createPage()`.
 
 ## Mathematical verification
 
@@ -191,6 +265,16 @@ The Vitest suite checks:
 - Safe behavior for zero baselines, behind-camera points, and `z = 0` projections.
 - Direct-drag coordinate conversion, bounds, Y-axis inversion, and shared-state updates.
 
+For the Photo lab, it also checks:
+
+- The eight-point algorithm against `K₂⁻ᵀ[t]×RK₁⁻¹` from known cameras: exact without noise, rank 2, and sub-pixel under noise.
+- RANSAC on data with a third outliers: inlier recovery, reproducibility for a fixed seed, and the held-out error.
+- Rotation-only pairs flagged as degenerate; translated pairs accepted.
+- Epipoles equal to the projected camera centers; three-view transfer landing on the true projection; collapse on the trifocal plane.
+- Correlation search recovering a known shift, and flat patches flagged.
+- The full OpenCV pipeline on the sample room. All six view pairs are rated strong, with median line error under 1 px against ground truth.
+- Hash routing, fallback, and deep links.
+
 ## GitHub Pages deployment
 
 The workflow at `.github/workflows/deploy-pages.yml` runs tests, type-checking, linting, and the production build before deploying `dist`. Vite's base path is configured for:
@@ -199,17 +283,16 @@ The workflow at `.github/workflows/deploy-pages.yml` runs tests, type-checking, 
 
 In the repository's **Settings → Pages**, select **GitHub Actions** as the source if it is not already enabled. Every push to `main` then triggers deployment; it can also be started manually from the Actions tab.
 
-## Current scope
+Routes live after `#` (`…/#/lab`, `…/#/photos`) because GitHub Pages has no single-page-app fallback; hash routes survive refreshes and deep links. The 3D lab, the Photo lab, and the vision worker are separate chunks. `opencv.js` (about 11 MB with its WebAssembly embedded, served compressed) is fetched only when the Photo lab first analyzes images.
 
-Phase 1 uses generated geometry and normalized cameras with `K = I`. It is designed to teach the constraint itself, not to process real imagery.
+## Scope and future work
 
-## Future Phase 2 — not implemented
+The 3D lab teaches the constraint with synthetic normalized cameras (`K = I`). The Photo lab applies it to real images with uncalibrated `F`, automatic and manual correspondences, and two- to four-view transfer.
 
-- Upload two real photographs.
-- Enter manual point correspondences.
-- Implement the normalized eight-point algorithm.
-- Estimate and inspect `F` from data.
-- Draw epipolar lines over photographs.
-- Add a correspondence-learning game.
-- Optionally add automatic feature matching.
-- Explore calibrated essential matrices and triangulation.
+Ideas not yet implemented:
+
+- A rectification view that warps photos so epipolar lines become scanlines.
+- A staged Explain mode for the Photo lab.
+- A reconstruction tab: estimate `E` with an assumed focal length, recover the camera poses, triangulate, and show your photos in the 3D lab's scene.
+- A correspondence-learning game.
+- Learned matchers (for example SuperPoint and LightGlue on WebGPU) behind the same feature interface.
