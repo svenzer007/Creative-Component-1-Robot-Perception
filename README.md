@@ -4,9 +4,10 @@ An interactive teaching lab for **NYU Tandon ROB-GY 6203 Robot Perception — Cr
 
 **Core question:** Given a point in one image, where can its correspondence be in the second image?
 
-The app has two tabs, linked from the bar at the top of every page:
+The app has three tabs, linked from the bar at the top of every page:
 
 - **3D lab** (`#/lab`, the landing page): synthetic normalized cameras in a 3D scene. It builds the epipolar plane and line step by step and checks the geometry against `F`.
+- **Core concepts** (`#/concepts`): manipulate `x`, `x′`, `F`, intrinsics, and baseline scale to make the Fundamental and Essential Matrices visible rather than merely symbolic.
 - **Photo lab** (`#/photos`): the same constraint on real images. Upload or take 2–4 photos of one scene (or start from a built-in ray-traced room), and the app estimates `F` on your device. Point at anything and its epipolar line appears in every other photo.
 
 ## Conceptual walkthrough
@@ -127,6 +128,37 @@ Enable **Show family of epipolar planes** to reveal four additional rays and tra
 
 The primary cards keep `x`, `x′`, `l′ = Fx`, and the actual `x′ᵀFx` residual visible. Expand **Advanced matrices and verification** for `Rrel`, `trel`, `F`, singular values, numerical rank, epipoles, baseline length, and the independent 3D/F line-agreement error.
 
+## Core concepts
+
+Core Concepts turns the two central matrices into direct-manipulation experiments. It uses the same camera convention, presets, SVD adapter, and epipolar helpers as the other tabs, but keeps its interaction state local so unfinished work survives a tab switch without coupling the labs together.
+
+### Fundamental Matrix playground
+
+- The lesson opens in **Forward motion**, where the visible epipole makes the shared-line geometry easiest to recognize. General, Rectified, and Near rotation retain the Lab's exact camera poses and each includes a concise observation prompt.
+- Drag `x` in Image 1 and watch `l′ = Fx` move in Image 2. Drag candidate `x′` to change both the **Constraint error** `x′ᵀFx` and its true **Distance to epipolar line**. **Snap x′ to line** makes both approach numerical zero.
+- **Show several epipolar lines** reveals the epipolar pencil. Every plane contains the same camera baseline, so every target-image intersection passes through `e′`; finite, off-frame, and infinite epipoles receive distinct accessible markers.
+- Geometry comes before algebra. The baseline explanation stays visible, while the null-space/rank proof and the seven-degree-of-freedom count live in separate **Go deeper** disclosures.
+- A live **What to notice** prompt responds to the most recent drag, preset, pencil, calibration, or scale interaction. Advanced controls edit Camera 2 while Camera 1 remains the visible reference camera.
+
+Both SVG image points support mouse, pen, touch, and arrow-key movement; hold Shift with an arrow key for a ten-pixel step.
+
+### Essential Matrix playground
+
+The same interactive image pair stays visible in the calibrated lesson: `x` and `x′` remain draggable with mouse, pen, touch, or keyboard while their normalized coordinates update below.
+
+```text
+x̂  = K1⁻¹x
+x̂′ = K2⁻¹x′
+E   = K2ᵀ F K1
+E   = [t]×R
+```
+
+The displayed normalized plane is the conventional `z = 1` ray-coordinate plane, not a claim about scene depth. Focal length is the primary control; `fx`, `fy`, `cx`, and `cy` are available in the advanced intrinsic editor, with zero skew in this focused version. The calibration experiment holds the pose fixed and reports that changing `K` changes normalized coordinates and pixel-space `F`, while pose-derived `E = [t]×R`, `R`, and `t` remain tied to the same physical geometry. `K₂ᵀFK₁` and pose-derived `E` are compared only after canonicalization, up to homogeneous scale and sign.
+
+The guided baseline experiment asks whether `E` reveals camera separation, then holds rotation and translation direction fixed while scaling `t → λt`. Raw `E` and `F` norms scale with `λ`, but their canonical unit-Frobenius forms, epipolar lines, and translation direction remain unchanged. Only after that observation does the page introduce the Essential Matrix's five degrees of freedom: three for rotation and two for translation direction, with metric baseline magnitude unobservable. Zero translation is reported as a degeneracy rather than normalized into a fictitious matrix.
+
+The collapsed pose preview introduces the four `(R,t)` candidates and cheirality without implementing triangulation. **Where does F come from?** summarizes the normalized eight-point pipeline and links to the Photo Lab's actual estimator rather than duplicating it.
+
 ## Photo lab
 
 The Photo lab opens on a **sample room**: four views ray-traced in the browser from known cameras. Because its geometry is exact, every estimate there can be checked against the truth. Replace it with your own photos at any time; nothing is uploaded or stored, and pixels live only in memory.
@@ -208,12 +240,17 @@ src/
   styles.css               shared tokens and the 3D lab's interface
   types.ts                 shared state and geometry contracts
   app/
-    router.ts              hash routes (#/lab, #/photos) with canonical fallback
+    router.ts              hash routes (#/lab, #/concepts, #/photos) with fallback
     routes.ts              the tab list; one entry per lab
     shell.ts, shell.css    route bar, lazy page mounting, keep-alive, transitions
     page.ts                mount / activate / deactivate contract for tabs
   pages/
     lab/labPage.ts         the 3D lab, mounted as a tab
+    concepts/
+      conceptsPage.ts      Fundamental/Essential interaction controller
+      model.ts             page-local state and one derived math snapshot
+      views.ts             SVG image, normalized-plane, and baseline views
+      coordinates.ts       tested pointer-to-pixel mapping
     photos/
       photoPage.ts         the Photo lab tab
       photoLab.ts          controller: loading, analysis, gestures, rendering
@@ -224,6 +261,7 @@ src/
       sampleTruth.ts       exact correspondences in the sample room
       model.ts             pure helpers: F lookup, coordinates, manual fits
   math/
+    calibratedEpipolar.ts  raw/canonical E and F for arbitrary calibrated poses
     linearAlgebra.ts       local vector/matrix operations and SVD adapter
     camera.ts              world/camera transforms and projection
     epipolar.ts            F, epipoles, planes, intersection, clipping
@@ -264,6 +302,10 @@ The Vitest suite checks:
 - Agreement between the independent 3D intersection and `Fx` up to scale/sign.
 - Safe behavior for zero baselines, behind-camera points, and `z = 0` projections.
 - Direct-drag coordinate conversion, bounds, Y-axis inversion, and shared-state updates.
+- Pixel-space `l′ = Fx`, reverse lines, snapping, line-pencil convergence, and finite/infinite epipoles in Core Concepts.
+- `E = [t]×R`, `F = K2⁻ᵀEK1⁻¹`, and `E ≈ K2ᵀFK1` for arbitrary source and target poses.
+- Pixel/normalized constraint agreement, Essential singular structure `(σ, σ, 0)`, and raw-versus-canonical baseline scaling.
+- Core Concepts pointer/keyboard interaction, intrinsic controls, route registration, and page-local persistence.
 
 For the Photo lab, it also checks:
 
@@ -283,16 +325,18 @@ The workflow at `.github/workflows/deploy-pages.yml` runs tests, type-checking, 
 
 In the repository's **Settings → Pages**, select **GitHub Actions** as the source if it is not already enabled. Every push to `main` then triggers deployment; it can also be started manually from the Actions tab.
 
-Routes live after `#` (`…/#/lab`, `…/#/photos`) because GitHub Pages has no single-page-app fallback; hash routes survive refreshes and deep links. The 3D lab, the Photo lab, and the vision worker are separate chunks. `opencv.js` (about 11 MB with its WebAssembly embedded, served compressed) is fetched only when the Photo lab first analyzes images.
+Routes live after `#` (`…/#/lab`, `…/#/concepts`, `…/#/photos`) because GitHub Pages has no single-page-app fallback; hash routes survive refreshes and deep links. The 3D lab, Core Concepts, the Photo lab, and the vision worker are separate chunks. `opencv.js` (about 11 MB with its WebAssembly embedded, served compressed) is fetched only when the Photo lab first analyzes images.
 
 ## Scope and future work
 
-The 3D lab teaches the constraint with synthetic normalized cameras (`K = I`). The Photo lab applies it to real images with uncalibrated `F`, automatic and manual correspondences, and two- to four-view transfer.
+The 3D lab teaches the constraint with synthetic normalized cameras (`K = I`). Core Concepts explains `F`, calibrated `E`, rank, null spaces, and scale ambiguity. The Photo lab applies `F` to real images with automatic and manual correspondences and two- to four-view transfer.
 
 Ideas not yet implemented:
 
 - A rectification view that warps photos so epipolar lines become scanlines.
 - A staged Explain mode for the Photo lab.
 - A reconstruction tab: estimate `E` with an assumed focal length, recover the camera poses, triangulate, and show your photos in the 3D lab's scene.
+- Interactive Essential-Matrix decomposition into four pose candidates and cheirality selection.
+- An explicit Lab/Photo-to-Core-Concepts state handoff; the current tabs intentionally retain independent local state.
 - A correspondence-learning game.
 - Learned matchers (for example SuperPoint and LightGlue on WebGPU) behind the same feature interface.

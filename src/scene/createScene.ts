@@ -20,8 +20,17 @@ const COLORS = {
 
 const v3 = (value: Vec3): THREE.Vector3 => new THREE.Vector3(value[0], value[1], value[2]);
 
-function disposeObject(object: THREE.Object3D): void {
+/**
+ * Clears one exclusively owned scene subtree.
+ *
+ * CSS2DObject only removes its DOM element when that object itself receives a
+ * Three.js `removed` event. Clearing an ancestor group does not emit the event
+ * for nested labels, so detach every label explicitly before clearing the
+ * hierarchy.
+ */
+export function clearOwnedGroup(object: THREE.Object3D): void {
   object.traverse((child) => {
+    if (child instanceof CSS2DObject) child.element.remove();
     if (child instanceof THREE.Mesh || child instanceof THREE.Line) {
       child.geometry.dispose();
       const materials = Array.isArray(child.material) ? child.material : [child.material];
@@ -187,7 +196,7 @@ export class GeometryScene {
   }
 
   update(snapshot: GeometrySnapshot, visibility: SceneVisibility): void {
-    disposeObject(this.dynamic);
+    clearOwnedGroup(this.dynamic);
     const { camera1, camera2, ray } = snapshot;
 
     this.dynamic.add(cameraVisual(camera1, COLORS.camera1, 'C1'));

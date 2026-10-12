@@ -1,6 +1,12 @@
 import { EigenvalueDecomposition, Matrix, SingularValueDecomposition } from 'ml-matrix';
 import type { CameraPose, Mat3 } from '../types';
-import { mat3Mul, mat3Vec3, skew3, sub3, transpose3 } from '../math/linearAlgebra';
+import { mat3Mul, transpose3 } from '../math/linearAlgebra';
+import {
+  calibratedEpipolar,
+  canonicalizeMatrix,
+  invertIntrinsics as invertCalibratedIntrinsics,
+  matrixAgreementUpToScale,
+} from '../math/calibratedEpipolar';
 import type { Correspondence } from './types';
 
 export interface PointNormalization {
@@ -61,16 +67,7 @@ export const normalizationMatrix = (normalization: PointNormalization): Mat3 => 
 
 /** Unit Frobenius norm, with the largest-magnitude entry made positive so equal models print identically. */
 export function canonicalScale(matrix: Mat3): Mat3 | null {
-  let norm = 0;
-  let largest = 0;
-  for (const value of matrix) {
-    norm += value * value;
-    if (Math.abs(value) > Math.abs(largest)) largest = value;
-  }
-  norm = Math.sqrt(norm);
-  if (!(norm > 0) || !Number.isFinite(norm)) return null;
-  const scale = (largest < 0 ? -1 : 1) / norm;
-  return matrix.map((value) => value * scale) as unknown as Mat3;
+  return canonicalizeMatrix(matrix);
 }
 
 /** Eigenvector of the smallest eigenvalue of a symmetric n×n matrix stored row-major. */
@@ -184,36 +181,16 @@ export function rmsSampson(fundamental: Mat3, matches: readonly Correspondence[]
 
 /** Inverse of an upper-triangular intrinsics matrix [fx s cx; 0 fy cy; 0 0 1]. */
 export function invertIntrinsics(intrinsics: Mat3): Mat3 {
-  const [fx, skew, cx, , fy, cy] = intrinsics;
-  return [
-    1 / fx, -skew / (fx * fy), (skew * cy - cx * fy) / (fx * fy),
-    0, 1 / fy, -cy / fy,
-    0, 0, 1,
-  ];
+  return invertCalibratedIntrinsics(intrinsics);
 }
 
 /** Exact F = K₂⁻ᵀ [t]× R K₁⁻¹ for two known cameras, with R = R₂R₁ᵀ and t = R₂(C₁ − C₂). */
 export function fundamentalFromCameras(source: PinholeCamera, target: PinholeCamera): Mat3 {
-  const rotation = mat3Mul(target.pose.rotation, transpose3(source.pose.rotation));
-  const translation = mat3Vec3(target.pose.rotation, sub3(source.pose.center, target.pose.center));
-  const essential = mat3Mul(skew3(translation), rotation);
-  const fundamental = mat3Mul(
-    mat3Mul(transpose3(invertIntrinsics(target.intrinsics)), essential),
-    invertIntrinsics(source.intrinsics),
-  );
-  return canonicalScale(fundamental) ?? fundamental;
+  const result = calibratedEpipolar(source, target);
+  return result.fundamentalCanonical ?? result.fundamentalRaw;
 }
 
 /** Distance between two fundamental matrices up to scale and sign (0 means identical models). */
 export function fundamentalDifference(first: Mat3, second: Mat3): number {
-  const a = canonicalScale(first);
-  const b = canonicalScale(second);
-  if (!a || !b) return Number.POSITIVE_INFINITY;
-  let direct = 0;
-  let flipped = 0;
-  for (let i = 0; i < 9; i += 1) {
-    direct += (a[i] - b[i]) ** 2;
-    flipped += (a[i] + b[i]) ** 2;
-  }
-  return Math.sqrt(Math.min(direct, flipped));
+  return matrixAgreementUpToScale(first, second) ?? Number.POSITIVE_INFINITY;
 }
