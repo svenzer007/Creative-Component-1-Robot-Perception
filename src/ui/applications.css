@@ -106,3 +106,7 @@
 .ep-e { fill: var(--warning); stroke: #fff3cb; stroke-width: 1.5; }
 .ep-lbl { fill: #dce7f6; font: 700 10px ui-monospace, monospace; paint-order: stroke; stroke: #0b1019; stroke-width: 3px; } .ep-lbl.warn { fill: var(--warning); }
 .ep-note { fill: #9fb0c6; font: 600 9px ui-monospace, monospace; } .ep-note.strong { fill: var(--epiline); }
+
+/* Page wrapper when mounted as a tab */
+.applications-page .applications-shell { width: min(1440px, calc(100% - 40px)); margin-inline: auto; }
+@media (max-width: 720px) { .applications-page .applications-shell { width: min(100% - 22px, 1440px); } }

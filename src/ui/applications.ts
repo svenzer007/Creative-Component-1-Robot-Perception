@@ -2,6 +2,7 @@ import './applications.css';
 import { APPLICATIONS, BASELINES } from './applicationsData';
 import type { Application } from './applicationsData';
 import { mountScenes, sceneHtml } from './applicationScenes';
+export { pauseScenes, resumeScenes } from './applicationScenes';
 
 function cardHtml(app: Application): string {
   const sources = app.sources

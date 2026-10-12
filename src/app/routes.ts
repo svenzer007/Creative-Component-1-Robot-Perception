@@ -26,6 +26,13 @@ export const ROUTES: readonly RouteDefinition[] = [
     title: 'Photo lab · Epipolar Geometry Lab',
     load: () => import('../pages/photos/photoPage'),
   },
+  {
+    id: 'applications',
+    path: '/applications',
+    label: 'Applications',
+    title: 'Applications · Epipolar Geometry Lab',
+    load: () => import('../pages/applications/applicationsPage'),
+  },
 ];
 
 /** The 3D lab stays the landing page, so existing links and the presentation flow keep working. */

@@ -359,7 +359,8 @@ function epiPlane(c1: Pt, c2: Pt, t: Pt): string {
 
 interface Live { def: SceneDef; svg: SVGSVGElement; dyn: SVGGElement; epi: SVGSVGElement | null; out: HTMLElement; t: Pt; s: number; manual: boolean; phase: number }
 const live: Live[] = [];
-let rafStarted = false;
+let running = false;
+let reducedMotion = false;
 
 function draw(l: Live): void {
   const e = l.def.eyes(l.s);
@@ -374,6 +375,7 @@ function draw(l: Live): void {
 }
 
 function tick(time: number): void {
+  if (!running) return;
   for (const l of live) {
     if (l.manual) continue;
     const b = l.def.bounds;
@@ -381,6 +383,18 @@ function tick(time: number): void {
     l.t = { x: (b.x0 + b.x1) / 2 + ((b.x1 - b.x0) / 2.6) * Math.sin(k), y: (b.y0 + b.y1) / 2 + ((b.y1 - b.y0) / 2.6) * Math.sin(k * 1.37) };
     draw(l);
   }
+  if (running) requestAnimationFrame(tick);
+}
+
+/** Stop the idle animation (call when the page is hidden). */
+export function pauseScenes(): void {
+  running = false;
+}
+
+/** Restart the idle animation (call when the page is shown again). */
+export function resumeScenes(): void {
+  if (running || reducedMotion || !live.length) return;
+  running = true;
   requestAnimationFrame(tick);
 }
 
@@ -404,6 +418,7 @@ export function sceneHtml(id: string): string {
 /** Wire up every `.sc` figure inside `root`. */
 export function mountScenes(root: HTMLElement): void {
   const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  reducedMotion = reduce;
   root.querySelectorAll<HTMLElement>('figure.sc').forEach((fig, i) => {
     const def = SCENES[fig.dataset.scene ?? ''];
     if (!def) return;
@@ -442,8 +457,5 @@ export function mountScenes(root: HTMLElement): void {
     });
     draw(l);
   });
-  if (!rafStarted && !reduce && live.length) {
-    rafStarted = true;
-    requestAnimationFrame(tick);
-  }
+  resumeScenes();
 }
