@@ -100,7 +100,7 @@ export class ControlsPanel {
     this.animationFrame = requestAnimationFrame(this.animateDepth);
   }
 
-  private pause(): void {
+  pause(): void {
     cancelAnimationFrame(this.animationFrame);
     this.animationFrame = 0;
   }

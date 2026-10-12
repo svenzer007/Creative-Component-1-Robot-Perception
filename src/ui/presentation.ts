@@ -30,7 +30,7 @@ export class PresentationController {
   update(state: AppState): void {
     const overlay = this.root.querySelector<HTMLElement>('#presentation-bar')!;
     overlay.hidden = !state.presentation.active;
-    document.body.classList.toggle('presentation-active', state.presentation.active);
+    this.root.classList.toggle('presentation-active', state.presentation.active);
     if (!state.presentation.active) return;
     const stage = STAGES[state.presentation.stage - 1];
     this.root.querySelector<HTMLElement>('#presentation-step')!.textContent = `Stage ${state.presentation.stage} / ${STAGES.length}`;
