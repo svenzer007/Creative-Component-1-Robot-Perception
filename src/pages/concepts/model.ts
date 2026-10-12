@@ -1,6 +1,17 @@
-import type { CameraControls, Mat3 } from '../../types';
+import type { CameraControls, CameraPose, EpipoleResult, Mat3, Vec3 } from '../../types';
 import type { Pixel } from '../../vision/geometry2d';
-import { PRESETS } from '../../state/appState';
+import { CAMERA_1, PRESETS } from '../../state/appState';
+import { cameraPoseFromControls } from '../../math/camera';
+import { calibratedEpipolar, essentialFromFundamental, matrixAgreementUpToScale, normalizeImagePoint } from '../../math/calibratedEpipolar';
+import { dot3, mat3Vec3, norm3, scale3, svd3 } from '../../math/linearAlgebra';
+import {
+  clipToImage,
+  closestPointOnLine,
+  epipolarLine,
+  epipoles,
+  pointLineDistance,
+  reverseEpipolarLine,
+} from '../../vision/geometry2d';
 
 export type ConceptSection = 'fundamental' | 'essential';
 export type ConceptPreset = 'general' | 'rectified' | 'forward' | 'nearRotation';
@@ -27,6 +38,12 @@ export interface CoreConceptsState {
 
 export const IMAGE_WIDTH = 640;
 export const IMAGE_HEIGHT = 420;
+export const FAMILY_PIXELS: readonly Pixel[] = [
+  [88, 78],
+  [210, 148],
+  [352, 262],
+  [548, 338],
+];
 
 export const CONCEPT_PRESETS: Record<ConceptPreset, CameraControls> = {
   general: PRESETS.general,
@@ -54,7 +71,143 @@ export const intrinsicsMatrix = (controls: IntrinsicsControls): Mat3 => [
   0, 0, 1,
 ];
 
-export type ConceptsListener = (state: CoreConceptsState) => void;
+export interface PencilLine {
+  source: Pixel;
+  line: Vec3;
+  clipped: readonly [Vec3, Vec3] | null;
+}
+
+export interface CoreConceptsSnapshot {
+  state: CoreConceptsState;
+  camera1: CameraPose;
+  camera2: CameraPose;
+  sourceK: Mat3;
+  targetK: Mat3;
+  sourcePoint: Vec3;
+  targetPoint: Vec3;
+  sourceNormalized: Vec3;
+  targetNormalized: Vec3;
+  relativeRotation: Mat3;
+  relativeTranslation: Vec3;
+  essentialRaw: Mat3;
+  essentialCanonical: Mat3 | null;
+  essentialFromF: Mat3 | null;
+  fundamentalRaw: Mat3;
+  fundamentalCanonical: Mat3 | null;
+  fundamentalLine: Vec3 | null;
+  fundamentalLineClipped: readonly [Vec3, Vec3] | null;
+  reverseLine: Vec3 | null;
+  reverseLineClipped: readonly [Vec3, Vec3] | null;
+  closestTarget: Pixel | null;
+  algebraicResidual: number | null;
+  signedDistance: number | null;
+  distance: number | null;
+  epipoleSource: EpipoleResult | null;
+  epipoleTarget: EpipoleResult | null;
+  pencil: readonly PencilLine[];
+  singularValues: Vec3;
+  rank: number;
+  baselineLength: number;
+  essentialAgreement: number | null;
+  warning: string | null;
+}
+
+const scaledCameraControls = (controls: CameraControls, factor: number): CameraControls => ({
+  ...controls,
+  center: scale3(controls.center, factor),
+});
+
+const matrixNorm = (matrix: Mat3): number => Math.hypot(...matrix);
+
+export function deriveConcepts(state: CoreConceptsState): CoreConceptsSnapshot {
+  const camera1 = CAMERA_1;
+  const camera2 = cameraPoseFromControls(scaledCameraControls(state.camera2, state.baselineScale));
+  const sourceK = intrinsicsMatrix(state.intrinsics1);
+  const targetK = intrinsicsMatrix(state.intrinsics2);
+  const calibrated = calibratedEpipolar(
+    { pose: camera1, intrinsics: sourceK },
+    { pose: camera2, intrinsics: targetK },
+  );
+  const sourcePoint: Vec3 = [state.sourcePixel[0], state.sourcePixel[1], 1];
+  const targetPoint: Vec3 = [state.targetPixel[0], state.targetPixel[1], 1];
+  const fundamental = calibrated.fundamentalCanonical;
+  const fundamentalLine = fundamental ? epipolarLine(fundamental, state.sourcePixel) : null;
+  const reverseLine = fundamental ? reverseEpipolarLine(fundamental, state.targetPixel) : null;
+  const closestTarget = fundamentalLine ? closestPointOnLine(fundamentalLine, state.targetPixel) : null;
+  const signedDistance = fundamentalLine
+    ? dot3(targetPoint, fundamentalLine) / Math.hypot(fundamentalLine[0], fundamentalLine[1])
+    : null;
+  const poles = fundamental ? epipoles(fundamental) : null;
+  const decomposition = fundamental ? svd3(fundamental) : null;
+  const pencil = fundamental
+    ? FAMILY_PIXELS.flatMap((source): PencilLine[] => {
+      const line = epipolarLine(fundamental, source);
+      return line ? [{ source, line, clipped: clipToImage(line, IMAGE_WIDTH, IMAGE_HEIGHT) }] : [];
+    })
+    : [];
+  const essentialFromF = fundamental
+    ? essentialFromFundamental(fundamental, sourceK, targetK)
+    : null;
+  const baselineLength = norm3(calibrated.translation);
+
+  let warning: string | null = null;
+  if (calibrated.status === 'degenerate') {
+    warning = 'Zero baseline: E and F collapse to zero, so translational epipolar geometry is undefined.';
+  } else if (baselineLength < 0.08) {
+    warning = 'Near pure rotation: the tiny translation makes epipolar geometry numerically fragile.';
+  } else if (!fundamentalLine?.every(Number.isFinite)) {
+    warning = 'This point maps to a line at infinity for the current configuration.';
+  }
+
+  return {
+    state,
+    camera1,
+    camera2,
+    sourceK,
+    targetK,
+    sourcePoint,
+    targetPoint,
+    sourceNormalized: normalizeImagePoint(sourceK, sourcePoint),
+    targetNormalized: normalizeImagePoint(targetK, targetPoint),
+    relativeRotation: calibrated.rotation,
+    relativeTranslation: calibrated.translation,
+    essentialRaw: calibrated.essentialRaw,
+    essentialCanonical: calibrated.essentialCanonical,
+    essentialFromF,
+    fundamentalRaw: calibrated.fundamentalRaw,
+    fundamentalCanonical: fundamental,
+    fundamentalLine,
+    fundamentalLineClipped: fundamentalLine ? clipToImage(fundamentalLine, IMAGE_WIDTH, IMAGE_HEIGHT) : null,
+    reverseLine,
+    reverseLineClipped: reverseLine ? clipToImage(reverseLine, IMAGE_WIDTH, IMAGE_HEIGHT) : null,
+    closestTarget,
+    algebraicResidual: fundamental ? dot3(targetPoint, mat3Vec3(fundamental, sourcePoint)) : null,
+    signedDistance,
+    distance: fundamentalLine ? pointLineDistance(fundamentalLine, state.targetPixel) : null,
+    epipoleSource: poles?.source ?? null,
+    epipoleTarget: poles?.target ?? null,
+    pencil,
+    singularValues: decomposition?.singularValues ?? [0, 0, 0],
+    rank: decomposition?.rank ?? 0,
+    baselineLength,
+    essentialAgreement: essentialFromF
+      ? matrixAgreementUpToScale(essentialFromF, calibrated.essentialRaw)
+      : null,
+    warning,
+  };
+}
+
+export function snapTargetToLine(snapshot: CoreConceptsSnapshot): Pixel | null {
+  if (!snapshot.fundamentalLine || !snapshot.closestTarget) return null;
+  return [
+    Math.min(IMAGE_WIDTH, Math.max(0, snapshot.closestTarget[0])),
+    Math.min(IMAGE_HEIGHT, Math.max(0, snapshot.closestTarget[1])),
+  ];
+}
+
+export const matrixFrobeniusNorm = matrixNorm;
+
+export type ConceptsListener = (state: CoreConceptsState, snapshot: CoreConceptsSnapshot) => void;
 
 /** Small page-local store; the app shell keeps the owning page instance alive between tabs. */
 export class CoreConceptsStore {
@@ -69,9 +222,14 @@ export class CoreConceptsStore {
     return this.state;
   }
 
+  snapshot(): CoreConceptsSnapshot {
+    return deriveConcepts(this.state);
+  }
+
   update(patch: Partial<CoreConceptsState>): void {
     this.state = { ...this.state, ...patch };
-    this.listeners.forEach((listener) => listener(this.state));
+    const snapshot = this.snapshot();
+    this.listeners.forEach((listener) => listener(this.state, snapshot));
   }
 
   applyPreset(preset: ConceptPreset): void {
@@ -80,8 +238,7 @@ export class CoreConceptsStore {
 
   subscribe(listener: ConceptsListener): () => void {
     this.listeners.add(listener);
-    listener(this.state);
+    listener(this.state, this.snapshot());
     return () => this.listeners.delete(listener);
   }
 }
-
