@@ -15,7 +15,7 @@ import {
 
 export type ConceptSection = 'fundamental' | 'essential';
 export type ConceptPreset = 'general' | 'rectified' | 'forward' | 'nearRotation';
-export type LessonFocus = 'intro' | 'source' | 'target' | 'pencil' | 'preset' | 'calibration' | 'scale';
+export type LessonFocus = 'intro' | 'source' | 'target' | 'pencil' | 'preset' | 'pose' | 'calibration' | 'scale';
 
 export interface IntrinsicsControls {
   fx: number;
@@ -54,12 +54,41 @@ export const CONCEPT_PRESETS: Record<ConceptPreset, CameraControls> = {
   nearRotation: PRESETS.rotation,
 };
 
-export const PRESET_DESCRIPTIONS: Record<ConceptPreset, string> = {
-  forward: 'Forward motion brings the epipole into the image, so the epipolar lines radiate from a visible point.',
-  general: 'A translated and rotated camera produces oblique epipolar lines and a typically off-frame epipole.',
-  rectified: 'Parallel cameras with a horizontal baseline produce horizontal, parallel lines and an epipole at infinity.',
-  nearRotation: 'A tiny baseline makes the translational epipolar signal weak and numerically fragile.',
+export const PRESET_DESCRIPTIONS: Record<ConceptSection, Record<ConceptPreset, string>> = {
+  fundamental: {
+    forward: 'Forward motion brings the epipole into the image, so the epipolar lines radiate from a visible point.',
+    general: 'Translation and rotation produce oblique epipolar lines and a typically off-frame epipole.',
+    rectified: 'Parallel cameras with a horizontal baseline produce horizontal, parallel lines and an epipole at infinity.',
+    nearRotation: 'A tiny baseline makes the translational epipolar signal weak and numerically fragile.',
+  },
+  essential: {
+    forward: 'Translation is mainly along the viewing direction, making its direction and the finite epipole easy to see.',
+    general: 'Both relative rotation R and translation t are nontrivial, giving a generic Essential-matrix configuration.',
+    rectified: 'The cameras share orientation and translate horizontally, making the calibrated stereo geometry especially simple.',
+    nearRotation: 'Translation is tiny; as ‖t‖ approaches zero, E becomes degenerate and translational stereo information disappears.',
+  },
 };
+
+const controlsMatch = (first: CameraControls, second: CameraControls): boolean => (
+  first.center.every((value, index) => Math.abs(value - second.center[index]) < 1e-9)
+  && Math.abs(first.yawDegrees - second.yawDegrees) < 1e-9
+  && Math.abs(first.pitchDegrees - second.pitchDegrees) < 1e-9
+);
+
+/** Returns the preset represented by the base pose, independent of the scale experiment. */
+export function matchingPreset(camera2: CameraControls): ConceptPreset | null {
+  const match = (Object.keys(CONCEPT_PRESETS) as ConceptPreset[])
+    .find((preset) => controlsMatch(camera2, CONCEPT_PRESETS[preset]));
+  return match ?? null;
+}
+
+export function presetDescription(section: ConceptSection, camera2: CameraControls): string {
+  const preset = matchingPreset(camera2);
+  if (preset) return PRESET_DESCRIPTIONS[section][preset];
+  return section === 'essential'
+    ? 'Custom pose: the Camera 2 controls now define the relative rotation R and translation t.'
+    : 'Custom pose: the current camera geometry now determines the epipolar lines and epipoles.';
+}
 
 export const DEFAULT_INTRINSICS_1: IntrinsicsControls = { fx: 520, fy: 520, cx: 320, cy: 210 };
 export const DEFAULT_INTRINSICS_2: IntrinsicsControls = { fx: 560, fy: 560, cx: 320, cy: 210 };
@@ -258,22 +287,38 @@ export function noticeForState(state: CoreConceptsState, snapshot: CoreConceptsS
       : 'Moving x rotates its allowed line l′ in the other image.';
   }
   if (state.lessonFocus === 'target') {
-    const distance = snapshot.distance === null ? 'undefined' : `${snapshot.distance.toFixed(2)} px`;
-    return `The constraint error approaches zero as x′ reaches l′; its current distance is ${distance}.`;
+    if (state.section === 'essential') {
+      if (snapshot.normalizedResidual === null) return 'The normalized constraint is undefined for this degenerate camera geometry.';
+      return 'The normalized constraint error reaches zero only when x and candidate x′ satisfy the epipolar constraint.';
+    }
+    if (snapshot.distance === null) return 'The point-to-line distance is undefined for this degenerate camera geometry.';
+    return 'The constraint error approaches zero as x′ reaches its epipolar line; the pixel distance measures the geometric gap.';
   }
   if (state.lessonFocus === 'pencil' && state.showPencil) {
     return 'Every colored target line passes through the same epipole e′.';
   }
   if (state.lessonFocus === 'calibration') {
-    return 'Calibration changes normalized coordinates and pixel-space F without changing the physical pose or pose-derived E.';
+    return 'Pixel and normalized coordinates and pixel-space F change, while pose-derived E, R, and t keep the same physical pose.';
   }
   if (state.lessonFocus === 'scale') {
-    return 'Changing baseline magnitude scales raw E and F, but not their canonical geometry or translation direction.';
+    return 'Increasing the baseline scales raw E and F, while normalized epipolar geometry and translation direction stay the same.';
   }
-  if (state.preset === 'rectified') return 'All epipolar lines are horizontal and parallel; their epipole lies at infinity.';
-  if (state.preset === 'nearRotation') return 'As translation becomes tiny, the translational epipolar signal becomes fragile.';
-  if (state.preset === 'forward') return 'The epipolar lines radiate through the visible epipole near the direction of travel.';
-  return 'The rotated camera produces oblique lines; the epipole may sit outside the visible image.';
+  if (state.lessonFocus === 'pose' || !matchingPreset(state.camera2)) {
+    return state.section === 'essential'
+      ? 'The custom Camera 2 pose changes relative R and t, so E and the normalized constraint update with it.'
+      : 'The custom Camera 2 pose changes the epipolar planes, lines, and epipoles together.';
+  }
+  const preset = matchingPreset(state.camera2) ?? state.preset;
+  if (state.section === 'essential') {
+    if (preset === 'rectified') return 'Identity relative rotation and horizontal translation make E especially simple.';
+    if (preset === 'nearRotation') return 'As ‖t‖ approaches zero, E loses its translational epipolar signal.';
+    if (preset === 'forward') return 'The translation direction is mainly forward, placing a finite epipole near the direction of travel.';
+    return 'Nontrivial relative R and t combine in E = [t]×R.';
+  }
+  if (preset === 'rectified') return 'Every epipolar line is horizontal and parallel; their common epipole lies at infinity.';
+  if (preset === 'nearRotation') return 'As translation becomes tiny, the translational epipolar signal becomes fragile.';
+  if (preset === 'forward') return 'Every epipolar line radiates through the visible epipole near the direction of travel.';
+  return 'The rotated camera produces oblique lines; their common epipole may sit outside the visible image.';
 }
 
 export function snapTargetToLine(snapshot: CoreConceptsSnapshot): Pixel | null {

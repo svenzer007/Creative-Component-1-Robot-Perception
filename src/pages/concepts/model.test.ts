@@ -6,8 +6,10 @@ import {
   DEFAULT_CONCEPTS_STATE,
   deriveConcepts,
   intrinsicsMatrix,
+  matchingPreset,
   noticeForState,
   PRESET_DESCRIPTIONS,
+  presetDescription,
   snapTargetToLine,
 } from './model';
 import { epipoleMarker } from './views';
@@ -25,14 +27,29 @@ describe('Core Concepts local state', () => {
 
   it('provides concise preset and action-specific learning guidance', () => {
     const snapshot = deriveConcepts(DEFAULT_CONCEPTS_STATE);
-    expect(PRESET_DESCRIPTIONS.forward).toContain('radiate');
-    expect(PRESET_DESCRIPTIONS.rectified).toContain('horizontal');
+    expect(PRESET_DESCRIPTIONS.fundamental.forward).toContain('radiate');
+    expect(PRESET_DESCRIPTIONS.fundamental.rectified).toContain('horizontal');
+    expect(PRESET_DESCRIPTIONS.essential.general).toContain('relative rotation R');
+    expect(PRESET_DESCRIPTIONS.essential.nearRotation).toContain('E becomes degenerate');
     expect(noticeForState(DEFAULT_CONCEPTS_STATE, snapshot)).toContain('visible epipole');
     expect(noticeForState({ ...DEFAULT_CONCEPTS_STATE, lessonFocus: 'source' }, snapshot)).toContain('allowed line');
     expect(noticeForState({ ...DEFAULT_CONCEPTS_STATE, lessonFocus: 'target' }, snapshot)).toContain('approaches zero');
     expect(noticeForState({ ...DEFAULT_CONCEPTS_STATE, lessonFocus: 'pencil', showPencil: true }, snapshot)).toContain('same epipole');
     expect(noticeForState({ ...DEFAULT_CONCEPTS_STATE, section: 'essential', lessonFocus: 'calibration' }, snapshot)).toContain('physical pose');
     expect(noticeForState({ ...DEFAULT_CONCEPTS_STATE, section: 'essential', lessonFocus: 'scale' }, snapshot)).toContain('raw E and F');
+    expect(noticeForState({ ...DEFAULT_CONCEPTS_STATE, section: 'essential', lessonFocus: 'target' }, snapshot)).toContain('normalized constraint error');
+  });
+
+  it('detects presets from the actual pose and gives custom-pose guidance', () => {
+    expect(matchingPreset(DEFAULT_CONCEPTS_STATE.camera2)).toBe('forward');
+    expect(presetDescription('essential', DEFAULT_CONCEPTS_STATE.camera2)).toContain('viewing direction');
+    const custom = structuredClone(DEFAULT_CONCEPTS_STATE);
+    custom.camera2 = { ...custom.camera2, center: [custom.camera2.center[0] + 0.01, ...custom.camera2.center.slice(1)] as [number, number, number] };
+    custom.lessonFocus = 'pose';
+    expect(matchingPreset(custom.camera2)).toBeNull();
+    expect(presetDescription('fundamental', custom.camera2)).toContain('Custom pose');
+    expect(presetDescription('essential', custom.camera2)).toContain('relative rotation R');
+    expect(noticeForState(custom, deriveConcepts(custom))).toContain('custom Camera 2 pose');
   });
 
   it('applies shared Lab preset values and resets baseline scale', () => {

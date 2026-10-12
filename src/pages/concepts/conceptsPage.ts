@@ -4,12 +4,12 @@ import type { CameraControls } from '../../types';
 import { mat3Vec3, norm3, transpose3 } from '../../math/linearAlgebra';
 import { clientToImagePixel } from './coordinates';
 import {
-  CONCEPT_PRESETS,
   CoreConceptsStore,
   IMAGE_HEIGHT,
   IMAGE_WIDTH,
-  PRESET_DESCRIPTIONS,
+  matchingPreset,
   noticeForState,
+  presetDescription,
   snapTargetToLine,
   type ConceptPreset,
   type ConceptSection,
@@ -46,15 +46,17 @@ const MARKUP = `
     </aside>
     <section class="concepts-workspace" data-measurement-stage>
       <div class="concepts-workspace-heading">
-        <div><span data-stage-step>Step 1 · Observe</span><h2 data-stage-title>One point constrains its match to one line</h2><p data-stage-intro>F maps x to the line l′ where its match must lie.</p><p class="concepts-try" data-stage-try><strong>Try this:</strong> drag x, then drag x′ toward the green line.</p></div>
-        <div class="concepts-presets" aria-label="Camera geometry presets">
-          <button type="button" data-preset="forward">Forward</button>
-          <button type="button" data-preset="general">General</button>
-          <button type="button" data-preset="rectified">Rectified</button>
-          <button type="button" data-preset="nearRotation">Near rotation</button>
+        <div><span data-stage-step>Step 1 · Observe</span><h2 data-stage-title>A point in Image 1 constrains its match in Image 2 to one line</h2><p data-stage-intro>F maps x to the line l′ where its match must lie.</p><p class="concepts-try" data-stage-try><strong>Try this:</strong> drag x, then drag x′ toward the green line.</p></div>
+        <div class="concepts-preset-panel">
+          <div class="concepts-presets" aria-label="Camera geometry presets">
+            <button type="button" data-preset="forward">Forward</button>
+            <button type="button" data-preset="general">General</button>
+            <button type="button" data-preset="rectified">Rectified</button>
+            <button type="button" data-preset="nearRotation">Near rotation</button>
+          </div>
+          <p class="concepts-preset-description" data-preset-description></p>
         </div>
       </div>
-      <p class="concepts-preset-description" data-preset-description></p>
 
       <div class="concepts-main-grid">
         <section class="concepts-image-pair" aria-label="Interactive image pair">
@@ -95,14 +97,25 @@ const MARKUP = `
 
       <section class="concepts-reveal" data-fundamental>
         <div class="concepts-workspace-heading compact">
-          <div><span>Step 2 · Explain</span><h2>Why do all the lines meet at e′?</h2><p class="concepts-try"><strong>Try this:</strong> show several epipolar lines, then switch presets and follow e′.</p></div>
+          <div><span>Step 2 · Explain</span><h2>Why does x constrain its match to a line?</h2><p class="concepts-try"><strong>Try this:</strong> drag x, then show several lines and follow their shared e′.</p></div>
         </div>
         <div class="concepts-reveal-grid">
           <article class="concepts-proof-card">
+            <p class="proof-step">Point → line geometry</p>
+            <h3>A pixel selects an epipolar plane</h3>
+            <p>Pixel x defines a 3D viewing ray. That ray and both camera centers form an epipolar plane, whose intersection with Image 2 is l′. The true match x′ must lie on that line.</p>
+          </article>
+          <article class="concepts-proof-card">
             <p class="proof-step">Geometric explanation</p>
-            <h3>Every plane shares the same baseline</h3>
+            <h3>Why do all such lines pass through e′?</h3>
             <p>Each source ray and the two camera centers form an epipolar plane. Every such plane contains the baseline, whose intersection with Image 2 is e′. Therefore every target line l′ passes through e′.</p>
           </article>
+          <details class="concepts-deep-dive"><summary>Go deeper: What does x′ᵀFx = 0 mean?</summary>
+            <article class="concepts-constraint-card">
+              <p><code>l′ = Fx</code> maps x to the coefficients of its target epipolar line. Then <code>x′ᵀFx = x′ᵀl′ = 0</code> means candidate x′ lies on that line.</p>
+              <p><strong>Constraint error</strong> is the algebraic residual. <strong>Distance to epipolar line</strong> is the geometric pixel distance; they are not the same quantity.</p>
+            </article>
+          </details>
           <details class="concepts-deep-dive"><summary>Go deeper: Why does this imply rank 2?</summary>
             <article class="concepts-singular-card">
               <p><code>e′ᵀF = 0 ⇔ Fᵀe′ = 0</code>. A nonzero left-null vector prevents rank 3; valid nondegenerate F therefore has rank 2.</p>
@@ -135,8 +148,13 @@ const MARKUP = `
 
     <section class="concepts-essential" data-essential hidden>
       <div class="concepts-workspace-heading">
-        <div><span>Step 2 · Calibrate</span><h2>What does calibration remove?</h2><p>K describes how camera rays become pixels. Applying K⁻¹ removes focal length and principal-point effects, turning x and x′ into normalized ray coordinates.</p><p class="concepts-try"><strong>Try this:</strong> change a focal length and watch x̂, x̂′, and F while the physical pose remains fixed.</p></div>
+        <div><span>Step 2 · Calibrate</span><h2>What does calibration remove?</h2><p>F constrains pixel coordinates. With known calibration, E constrains the same measurements as camera rays and connects them to relative pose.</p><p class="concepts-try"><strong>Try this:</strong> keep the physical pose fixed, change a focal length, and compare F with pose-derived E.</p></div>
       </div>
+
+      <aside class="intrinsics-key" aria-label="Camera intrinsics key">
+        <span><strong>f<sub>x</sub>, f<sub>y</sub></strong> horizontal and vertical focal scaling in pixels</span>
+        <span><strong>c<sub>x</sub>, c<sub>y</sub></strong> principal point where the optical axis meets the image</span>
+      </aside>
 
       <div class="calibration-grid">
         <article class="calibration-card source-calibration">
@@ -177,16 +195,30 @@ const MARKUP = `
 
       <section class="essential-bridge">
         <div class="concepts-workspace-heading compact"><div><span>Step 3 · Connect</span><h2>Calibration exposes relative pose</h2><p>Two independent paths reach the same Essential Matrix, up to homogeneous scale and sign.</p></div></div>
+        <div class="pose-recovery-flow" aria-label="Relative pose recovery pipeline">
+          <div><strong>F + known K₁, K₂</strong><small>pixel geometry + calibration</small></div><i>→</i>
+          <div><strong>E = K₂ᵀFK₁</strong><small>calibrated ray geometry</small></div><i>→</i>
+          <div><strong>decompose E</strong><small>four pose candidates</small></div><i>→</i>
+          <div><strong>R and t̂</strong><small>rotation + translation direction</small></div>
+        </div>
+        <details class="concepts-derivation"><summary>Why does calibration turn F into E?</summary>
+          <p>Start with <code>x′ᵀFx = 0</code>. Substitute <code>x = K₁x̂</code> and <code>x′ = K₂x̂′</code>: <code>x̂′ᵀK₂ᵀFK₁x̂ = 0</code>. Define <code>E = K₂ᵀFK₁</code>, giving <code>x̂′ᵀEx̂ = 0</code>.</p>
+        </details>
+        <div class="pose-key">
+          <span><strong>R</strong> relative rotation between the cameras</span>
+          <span><strong>t</strong> raw relative translation expressed in Camera 2 coordinates</span>
+          <small>Raw E = [t]×R scales with ‖t‖; image geometry observes E only up to homogeneous scale.</small>
+        </div>
         <div class="essential-matrix-flow">
           <article><span>From pixel geometry</span><h3>E = K₂ᵀ F K₁</h3><pre data-e-from-f></pre></article>
           <div class="matrix-equivalence"><strong>≈</strong><code data-e-agreement></code><small>scale/sign agreement</small></div>
           <article><span>From relative pose</span><h3>E = [t]× R</h3><pre data-e-pose></pre></article>
         </div>
-        <div class="normalized-constraint"><span>normalized epipolar constraint</span><strong>x̂′ᵀ E x̂</strong><code data-normalized-residual></code></div>
+        <div class="normalized-constraint"><span>Normalized constraint error</span><strong>x̂′ᵀ E x̂</strong><code data-normalized-residual></code><small>Zero only when the candidate pair satisfies the epipolar constraint.</small></div>
       </section>
 
       <section class="scale-experiment">
-        <div class="concepts-workspace-heading compact"><div><span>Step 4 · Experiment</span><h2>Can E tell how far apart the cameras are?</h2><p class="concepts-try"><strong>Try this:</strong> move the baseline multiplier and compare the raw norms with the canonical drift values.</p></div></div>
+        <div class="concepts-workspace-heading compact"><div><span>Step 4 · Experiment</span><h2>Can E tell how far apart the cameras are?</h2><p class="concepts-try"><strong>Try this:</strong> increase the baseline and compare matrix magnitude with the normalized epipolar geometry.</p></div></div>
         <div class="scale-grid">
           <article class="baseline-card">
             <svg data-baseline-svg viewBox="0 0 500 240" role="img" aria-label="Top-down camera baseline scale diagram"></svg>
@@ -194,10 +226,10 @@ const MARKUP = `
             <div data-essential-warning class="concepts-warning" role="status" hidden></div>
           </article>
           <article class="scale-readout">
-            <div><span>raw ‖E‖<sub>F</sub></span><strong data-e-raw-norm></strong><small>scales with λ</small></div>
-            <div><span>raw ‖F‖<sub>F</sub></span><strong data-f-raw-norm></strong><small>scales with λ</small></div>
-            <div class="invariant"><span>canonical E drift</span><strong data-e-drift></strong><small>unchanged</small></div>
-            <div class="invariant"><span>canonical F drift</span><strong data-f-drift></strong><small>same lines</small></div>
+            <div title="Raw Frobenius norm"><span>E matrix magnitude</span><strong data-e-raw-norm></strong><small>raw norm scales with λ</small></div>
+            <div title="Raw Frobenius norm"><span>F matrix magnitude</span><strong data-f-raw-norm></strong><small>raw norm scales with λ</small></div>
+            <div class="invariant" title="Canonical scale-free comparison"><span>Normalized E change</span><strong data-e-drift></strong><small>geometry stays the same</small></div>
+            <div class="invariant" title="Canonical scale-free comparison"><span>Epipolar-line change</span><strong data-f-drift></strong><small>same image lines</small></div>
           </article>
         </div>
         <p class="scale-takeaway"><strong>Takeaway:</strong> E recovers translation direction, not metric baseline magnitude or global scene scale. Scaling t only scales the raw homogeneous matrices.</p>
@@ -210,18 +242,21 @@ const MARKUP = `
           <p class="scale-excluded">Baseline magnitude is intentionally outside the count.</p>
           <code data-translation-direction></code>
         </article>
-        <div class="essential-singular"><span>Essential singular values</span><code data-essential-singular></code><small>ideal structure: (σ, σ, 0)</small></div>
+        <details class="concepts-deep-dive essential-constraints"><summary>Go deeper: Why does E have special singular values?</summary>
+          <article class="essential-singular"><p>A valid nondegenerate Essential Matrix has rank 2 and two equal nonzero singular values.</p><span>Essential singular values</span><code data-essential-singular></code><small>ideal structure: (σ, σ, 0)</small></article>
+        </details>
       </section>
 
       <details class="next-concepts">
         <summary>What comes next? · E to four pose candidates</summary>
-        <div><strong>2 candidate rotations × 2 translation signs = 4 (R, t) candidates</strong><p>Triangulation and a positive-depth (cheirality) test select the physically valid configuration. This focused v1 stops before that decomposition.</p></div>
+        <div><strong>Decomposing E initially gives four candidate relative poses:</strong><p>2 candidate rotations × 2 translation signs = 4 (R, t) pairs. A positive-depth (cheirality) test selects the physically valid configuration; translation length is still not recovered.</p></div>
       </details>
     </section>
 
-    <section class="concepts-bridge" aria-label="Where the Fundamental Matrix comes from">
+    <section class="concepts-bridge" aria-label="Where the Fundamental Matrix and relative pose come from">
       <details>
-        <summary><span>Supporting concept</span><strong>Where does F come from?</strong><small>Open the normalized eight-point pipeline</small></summary>
+        <summary><span>Supporting concept</span><strong>Where do F and relative pose come from?</strong><small>Open the estimation and recovery pipeline</small></summary>
+        <h3>1 · Estimate F from image correspondences</h3>
         <div class="estimation-flow">
           <div><b>1</b><span>correspondences</span><code>xᵢ ↔ xᵢ′</code></div><i>→</i>
           <div><b>2</b><span>one constraint each</span><code>xᵢ′ᵀFxᵢ = 0</code></div><i>→</i>
@@ -229,7 +264,14 @@ const MARKUP = `
           <div><b>4</b><span>solve with SVD</span><code>f = v₉</code></div><i>→</i>
           <div><b>5</b><span>restore geometry</span><code>rank(F) = 2</code></div>
         </div>
-        <p>The Photo Lab performs Hartley normalization, estimates F inside MSAC/RANSAC, enforces rank two, and reports held-out geometric error. Core Concepts reuses that tested math instead of building a second estimator.</p>
+        <h3>2 · Recover calibrated relative pose</h3>
+        <div class="pose-recovery-flow supporting-pose-flow">
+          <div><strong>known K₁, K₂</strong><small>camera calibration</small></div><i>→</i>
+          <div><strong>E = K₂ᵀFK₁</strong><small>calibrated geometry</small></div><i>→</i>
+          <div><strong>decompose E</strong><small>four candidates</small></div><i>→</i>
+          <div><strong>relative R and t̂</strong><small>cheirality selects one; length unknown</small></div>
+        </div>
+        <p>The Photo Lab estimates F with Hartley normalization and MSAC/RANSAC. With known calibration, E leads to relative rotation and translation direction; positive depth selects the physical candidate, but metric translation magnitude remains unknown.</p>
         <div class="bridge-actions"><a href="#/photos">Open Photo Lab <span>→</span></a><a href="#/lab">Explore the 3D construction <span>→</span></a></div>
       </details>
     </section>
@@ -349,7 +391,7 @@ class ConceptsPage implements Page {
     } else {
       camera2 = { ...state.camera2, [field]: value };
     }
-    this.store.update({ camera2, baselineScale: 1, lessonFocus: 'preset' });
+    this.store.update({ camera2, baselineScale: 1, lessonFocus: 'pose' });
   }
 
   private render(
@@ -364,10 +406,10 @@ class ConceptsPage implements Page {
     container.querySelector<HTMLElement>('[data-stage-step]')!.textContent = isFundamental
       ? 'Step 1 · Observe' : 'Step 1 · Start with the same measurements';
     container.querySelector<HTMLElement>('[data-stage-title]')!.textContent = isFundamental
-      ? 'One point constrains its match to one line' : 'What is the Essential Matrix for?';
+      ? 'A point in Image 1 constrains its match in Image 2 to one line' : 'What is the Essential Matrix for?';
     container.querySelector<HTMLElement>('[data-stage-intro]')!.textContent = isFundamental
       ? 'The Fundamental Matrix maps x to the target line l′ where its match must lie.'
-      : 'E expresses this same two-view constraint after camera calibration removes pixel-coordinate effects.';
+      : 'F constrains pixels; with known calibration, E constrains camera rays and connects them to relative pose.';
     container.querySelector<HTMLElement>('[data-stage-try]')!.innerHTML = isFundamental
       ? '<strong>Try this:</strong> drag x, then drag x′ toward the green line.'
       : '<strong>Try this:</strong> drag the same x and x′ here, then watch their normalized coordinates below.';
@@ -377,7 +419,7 @@ class ConceptsPage implements Page {
     });
     container.querySelector<HTMLElement>('.concepts-observation')!.classList.toggle('is-essential', !isFundamental);
     container.querySelector<HTMLButtonElement>('[data-snap]')!.hidden = !isFundamental;
-    container.querySelector<HTMLElement>('[data-preset-description]')!.textContent = PRESET_DESCRIPTIONS[state.preset];
+    container.querySelector<HTMLElement>('[data-preset-description]')!.textContent = presetDescription(state.section, state.camera2);
     container.querySelector<HTMLElement>('[data-notice]')!.textContent = noticeForState(state, snapshot);
     renderNormalizedPlanes(
       container.querySelector<SVGSVGElement>('[data-normalized-source-svg]')!,
@@ -403,13 +445,7 @@ class ConceptsPage implements Page {
     warning.textContent = snapshot.warning ?? '';
     container.querySelector<HTMLElement>('[data-geometry-summary]')!.textContent = `baseline ${snapshot.baselineLength.toFixed(2)} · rank ${snapshot.rank}`;
     container.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((button) => {
-      const preset = CONCEPT_PRESETS[button.dataset.preset as ConceptPreset];
-      const current = state.camera2;
-      const selected = state.baselineScale === 1
-        && preset.yawDegrees === current.yawDegrees
-        && preset.pitchDegrees === current.pitchDegrees
-        && preset.center.every((value, index) => value === current.center[index]);
-      button.classList.toggle('is-active', selected);
+      button.classList.toggle('is-active', button.dataset.preset === matchingPreset(state.camera2));
     });
     const details = container.querySelector<HTMLDetailsElement>('[data-geometry-details]')!;
     details.open = state.showAdvancedGeometry;
@@ -469,6 +505,9 @@ class ConceptsPage implements Page {
       ? 'undefined' : snapshot.normalizedResidual.toExponential(3);
     const scale = container.querySelector<HTMLInputElement>('[data-baseline-scale]')!;
     scale.value = String(state.baselineScale);
+    scale.setAttribute('value', String(state.baselineScale));
+    scale.setAttribute('aria-valuenow', String(state.baselineScale));
+    scale.setAttribute('aria-valuetext', `${state.baselineScale.toFixed(2)} times baseline`);
     scale.nextElementSibling!.textContent = `${state.baselineScale.toFixed(2)}×`;
     container.querySelector<HTMLElement>('[data-e-raw-norm]')!.textContent = snapshot.essentialRawNorm.toExponential(3);
     container.querySelector<HTMLElement>('[data-f-raw-norm]')!.textContent = snapshot.fundamentalRawNorm.toExponential(3);

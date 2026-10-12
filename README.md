@@ -136,6 +136,7 @@ Core Concepts turns the two central matrices into direct-manipulation experiment
 
 - The lesson opens in **Forward motion**, where the visible epipole makes the shared-line geometry easiest to recognize. General, Rectified, and Near rotation retain the Lab's exact camera poses and each includes a concise observation prompt.
 - Drag `x` in Image 1 and watch `l′ = Fx` move in Image 2. Drag candidate `x′` to change both the **Constraint error** `x′ᵀFx` and its true **Distance to epipolar line**. **Snap x′ to line** makes both approach numerical zero.
+- The explanation follows the geometry explicitly: `x` selects a 3D viewing ray, the ray and camera centers form an epipolar plane, and that plane cuts Image 2 in `l′`. A compact disclosure then distinguishes the algebraic residual `x′ᵀFx` from geometric pixel distance.
 - **Show several epipolar lines** reveals the epipolar pencil. Every plane contains the same camera baseline, so every target-image intersection passes through `e′`; finite, off-frame, and infinite epipoles receive distinct accessible markers.
 - Geometry comes before algebra. The baseline explanation stays visible, while the null-space/rank proof and the seven-degree-of-freedom count live in separate **Go deeper** disclosures.
 - A live **What to notice** prompt responds to the most recent drag, preset, pencil, calibration, or scale interaction. Advanced controls edit Camera 2 while Camera 1 remains the visible reference camera.
@@ -153,11 +154,13 @@ E   = K2ᵀ F K1
 E   = [t]×R
 ```
 
-The displayed normalized plane is the conventional `z = 1` ray-coordinate plane, not a claim about scene depth. Focal length is the primary control; `fx`, `fy`, `cx`, and `cy` are available in the advanced intrinsic editor, with zero skew in this focused version. The calibration experiment holds the pose fixed and reports that changing `K` changes normalized coordinates and pixel-space `F`, while pose-derived `E = [t]×R`, `R`, and `t` remain tied to the same physical geometry. `K₂ᵀFK₁` and pose-derived `E` are compared only after canonicalization, up to homogeneous scale and sign.
+The displayed normalized plane is the conventional `z = 1` ray-coordinate plane, not a claim about scene depth. A compact intrinsics key identifies `fx`/`fy` as focal pixel scaling and `cx`/`cy` as the principal point. Focal length remains the primary control, while the full zero-skew intrinsics stay collapsed. The calibration experiment holds the pose fixed and reports that changing `K` changes pixel and normalized coordinates and pixel-space `F`, while pose-derived `E = [t]×R`, `R`, and `t` remain tied to the same physical geometry. `K₂ᵀFK₁` and pose-derived `E` are compared only up to homogeneous scale and sign.
+
+A short derivation connects `x′ᵀFx = 0` to `x̂′ᵀEx̂ = 0`, and the recovery pipeline makes the dependency explicit: `F + known K₁,K₂ → E → decompose E → R, t̂`. Raw `t` retains baseline magnitude in `E = [t]×R`; its magnitude becomes unrecoverable because image geometry determines `E` only up to homogeneous scale.
 
 The guided baseline experiment asks whether `E` reveals camera separation, then holds rotation and translation direction fixed while scaling `t → λt`. Raw `E` and `F` norms scale with `λ`, but their canonical unit-Frobenius forms, epipolar lines, and translation direction remain unchanged. Only after that observation does the page introduce the Essential Matrix's five degrees of freedom: three for rotation and two for translation direction, with metric baseline magnitude unobservable. Zero translation is reported as a degeneracy rather than normalized into a fictitious matrix.
 
-The collapsed pose preview introduces the four `(R,t)` candidates and cheirality without implementing triangulation. **Where does F come from?** summarizes the normalized eight-point pipeline and links to the Photo Lab's actual estimator rather than duplicating it.
+Essential singular values and rank constraints remain available under **Go deeper** rather than interrupting the novice flow. The collapsed pose preview introduces the four `(R,t)` candidates and cheirality without implementing triangulation. **Where do F and relative pose come from?** joins the normalized eight-point pipeline to calibrated pose recovery and links to the Photo Lab's actual estimator rather than duplicating it.
 
 ## Photo lab
 
