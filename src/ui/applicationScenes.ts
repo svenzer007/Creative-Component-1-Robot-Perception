@@ -256,7 +256,7 @@ export const SCENES: Record<string, SceneDef> = { mars, mantis, eyes, hawkeye, s
 
 interface P3 { x: number; y: number; z: number }
 interface UV { u: number; v: number }
-const FOCAL = 62;
+const FOCAL = 44;
 const IMG = { w: 170, h: 92 };
 const BOX = [{ x: 12, y: 18 }, { x: 218, y: 18 }];
 const DEPTHS = [0.45, 0.65, 0.85, 1, 1.25, 1.6, 2.1];

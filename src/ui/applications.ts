@@ -99,6 +99,13 @@ export function renderApplications(host: HTMLElement): void {
       cards.forEach((card) => {
         card.hidden = current !== null && card.dataset.category !== current;
       });
+      // Let the remaining cards use the full width (see applications.css).
+      const grid = host.querySelector<HTMLElement>('.apps-grid');
+      if (grid) {
+        const visible = cards.filter((card) => !card.hidden).length;
+        if (current === null) delete grid.dataset.count;
+        else grid.dataset.count = String(Math.min(visible, 3));
+      }
     });
   });
 }

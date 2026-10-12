@@ -17,7 +17,7 @@
 .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
 .app-card { --accent: var(--c1); display: flex; flex-direction: column; border: 1px solid var(--line); border-top: 3px solid var(--accent); border-radius: 15px; background: var(--surface); padding: 16px 18px 14px; transition: border-color .18s, transform .18s; }
 .app-card:hover { transform: translateY(-2px); border-color: #3a4a63; border-top-color: var(--accent); }
-.app-card[hidden] { display: none; }
+.apps-grid .app-card[hidden] { display: none !important; }
 .accent-c1 { --accent: var(--c1); } .accent-c2 { --accent: var(--c2); } .accent-plane { --accent: var(--plane); }
 .accent-epiline { --accent: var(--epiline); } .accent-actual { --accent: var(--actual); } .accent-warning { --accent: var(--warning); }
 .app-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
@@ -110,3 +110,19 @@
 /* Page wrapper when mounted as a tab */
 .applications-page .applications-shell { width: min(1440px, calc(100% - 40px)); margin-inline: auto; }
 @media (max-width: 720px) { .applications-page .applications-shell { width: min(100% - 22px, 1440px); } }
+
+/* Filtered view: the remaining cards fill the page */
+.apps-grid[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.apps-grid[data-count="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.apps-grid[data-count="1"] { grid-template-columns: 1fr; }
+.apps-grid[data-count="1"] .app-card { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); column-gap: 32px; align-content: start; padding: 22px 26px 18px; }
+.apps-grid[data-count="1"] .app-card > * { grid-column: 2; }
+.apps-grid[data-count="1"] .app-card > .sc { grid-column: 1; grid-row: 1 / span 7; margin: 0; }
+.apps-grid[data-count="1"] .app-card h3 { font-size: 1.5rem; }
+.apps-grid[data-count="1"] .app-hook { font-size: 1rem; }
+.apps-grid[data-count="1"] .app-body, .apps-grid[data-count="1"] .app-epipolar p { font-size: .9rem; }
+.apps-grid[data-count="1"] .app-epipolar { margin-top: 14px; }
+@media (max-width: 900px) {
+  .apps-grid[data-count="1"] .app-card { display: flex; }
+  .apps-grid[data-count="2"], .apps-grid[data-count="3"] { grid-template-columns: 1fr; }
+}
