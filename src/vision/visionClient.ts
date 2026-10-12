@@ -5,7 +5,7 @@ import type { Correspondence } from './types';
 interface Pending {
   resolve: (value: unknown) => void;
   reject: (error: Error) => void;
-  onRows?: (view: number, startRow: number, endRow: number, rgba: Uint8ClampedArray) => void;
+  onRows?: (view: number, startRow: number, endRow: number, rgba: Uint8ClampedArray<ArrayBuffer>) => void;
   onProgress?: (progress: AnalysisProgress) => void;
 }
 

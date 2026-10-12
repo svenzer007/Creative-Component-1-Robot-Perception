@@ -8,7 +8,7 @@ export type WorkerRequest =
   | { type: 'estimate'; id: number; source: number; target: number; matches: Correspondence[]; width: number; height: number };
 
 export type WorkerResponse =
-  | { type: 'sample-rows'; id: number; view: number; startRow: number; endRow: number; rgba: Uint8ClampedArray }
+  | { type: 'sample-rows'; id: number; view: number; startRow: number; endRow: number; rgba: Uint8ClampedArray<ArrayBuffer> }
   | { type: 'sample-done'; id: number }
   | { type: 'progress'; id: number; progress: AnalysisProgress }
   | { type: 'analysis'; id: number; result: AnalysisResult }
