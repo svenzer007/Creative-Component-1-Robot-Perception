@@ -15,6 +15,7 @@ import {
 
 export type ConceptSection = 'fundamental' | 'essential';
 export type ConceptPreset = 'general' | 'rectified' | 'forward' | 'nearRotation';
+export type LessonFocus = 'intro' | 'source' | 'target' | 'pencil' | 'preset' | 'calibration' | 'scale';
 
 export interface IntrinsicsControls {
   fx: number;
@@ -34,6 +35,7 @@ export interface CoreConceptsState {
   baselineScale: number;
   showPencil: boolean;
   showAdvancedGeometry: boolean;
+  lessonFocus: LessonFocus;
 }
 
 export const IMAGE_WIDTH = 640;
@@ -52,17 +54,28 @@ export const CONCEPT_PRESETS: Record<ConceptPreset, CameraControls> = {
   nearRotation: PRESETS.rotation,
 };
 
+export const PRESET_DESCRIPTIONS: Record<ConceptPreset, string> = {
+  forward: 'Forward motion brings the epipole into the image, so the epipolar lines radiate from a visible point.',
+  general: 'A translated and rotated camera produces oblique epipolar lines and a typically off-frame epipole.',
+  rectified: 'Parallel cameras with a horizontal baseline produce horizontal, parallel lines and an epipole at infinity.',
+  nearRotation: 'A tiny baseline makes the translational epipolar signal weak and numerically fragile.',
+};
+
+export const DEFAULT_INTRINSICS_1: IntrinsicsControls = { fx: 520, fy: 520, cx: 320, cy: 210 };
+export const DEFAULT_INTRINSICS_2: IntrinsicsControls = { fx: 560, fy: 560, cx: 320, cy: 210 };
+
 export const DEFAULT_CONCEPTS_STATE: CoreConceptsState = {
   section: 'fundamental',
-  preset: 'general',
-  camera2: structuredClone(CONCEPT_PRESETS.general),
+  preset: 'forward',
+  camera2: structuredClone(CONCEPT_PRESETS.forward),
   sourcePixel: [248, 166],
   targetPixel: [404, 238],
-  intrinsics1: { fx: 520, fy: 520, cx: 320, cy: 210 },
-  intrinsics2: { fx: 560, fy: 560, cx: 320, cy: 210 },
+  intrinsics1: structuredClone(DEFAULT_INTRINSICS_1),
+  intrinsics2: structuredClone(DEFAULT_INTRINSICS_2),
   baselineScale: 1,
   showPencil: false,
   showAdvancedGeometry: false,
+  lessonFocus: 'intro',
 };
 
 export const intrinsicsMatrix = (controls: IntrinsicsControls): Mat3 => [
@@ -116,6 +129,8 @@ export interface CoreConceptsSnapshot {
   fundamentalRawNorm: number;
   essentialScaleInvariantError: number | null;
   fundamentalScaleInvariantError: number | null;
+  fundamentalCalibrationChange: number | null;
+  essentialPoseCalibrationChange: number | null;
   warning: string | null;
 }
 
@@ -138,6 +153,10 @@ export function deriveConcepts(state: CoreConceptsState): CoreConceptsSnapshot {
   const reference = calibratedEpipolar(
     { pose: camera1, intrinsics: sourceK },
     { pose: cameraPoseFromControls(state.camera2), intrinsics: targetK },
+  );
+  const calibrationReference = calibratedEpipolar(
+    { pose: camera1, intrinsics: intrinsicsMatrix(DEFAULT_INTRINSICS_1) },
+    { pose: camera2, intrinsics: intrinsicsMatrix(DEFAULT_INTRINSICS_2) },
   );
   const sourcePoint: Vec3 = [state.sourcePixel[0], state.sourcePixel[1], 1];
   const targetPoint: Vec3 = [state.targetPixel[0], state.targetPixel[1], 1];
@@ -221,8 +240,40 @@ export function deriveConcepts(state: CoreConceptsState): CoreConceptsSnapshot {
     fundamentalScaleInvariantError: reference.fundamentalCanonical && calibrated.fundamentalCanonical
       ? matrixAgreementUpToScale(reference.fundamentalCanonical, calibrated.fundamentalCanonical)
       : null,
+    fundamentalCalibrationChange: calibrationReference.fundamentalCanonical && calibrated.fundamentalCanonical
+      ? matrixAgreementUpToScale(calibrationReference.fundamentalCanonical, calibrated.fundamentalCanonical)
+      : null,
+    essentialPoseCalibrationChange: calibrationReference.essentialCanonical && calibrated.essentialCanonical
+      ? matrixAgreementUpToScale(calibrationReference.essentialCanonical, calibrated.essentialCanonical)
+      : null,
     warning,
   };
+}
+
+/** One concise observation selected from the learner's most recent action. */
+export function noticeForState(state: CoreConceptsState, snapshot: CoreConceptsSnapshot): string {
+  if (state.lessonFocus === 'source') {
+    return state.section === 'essential'
+      ? 'Moving x changes both its pixel measurement and the calibrated ray x̂.'
+      : 'Moving x rotates its allowed line l′ in the other image.';
+  }
+  if (state.lessonFocus === 'target') {
+    const distance = snapshot.distance === null ? 'undefined' : `${snapshot.distance.toFixed(2)} px`;
+    return `The constraint error approaches zero as x′ reaches l′; its current distance is ${distance}.`;
+  }
+  if (state.lessonFocus === 'pencil' && state.showPencil) {
+    return 'Every colored target line passes through the same epipole e′.';
+  }
+  if (state.lessonFocus === 'calibration') {
+    return 'Calibration changes normalized coordinates and pixel-space F without changing the physical pose or pose-derived E.';
+  }
+  if (state.lessonFocus === 'scale') {
+    return 'Changing baseline magnitude scales raw E and F, but not their canonical geometry or translation direction.';
+  }
+  if (state.preset === 'rectified') return 'All epipolar lines are horizontal and parallel; their epipole lies at infinity.';
+  if (state.preset === 'nearRotation') return 'As translation becomes tiny, the translational epipolar signal becomes fragile.';
+  if (state.preset === 'forward') return 'The epipolar lines radiate through the visible epipole near the direction of travel.';
+  return 'The rotated camera produces oblique lines; the epipole may sit outside the visible image.';
 }
 
 export function snapTargetToLine(snapshot: CoreConceptsSnapshot): Pixel | null {
@@ -261,7 +312,7 @@ export class CoreConceptsStore {
   }
 
   applyPreset(preset: ConceptPreset): void {
-    this.update({ preset, camera2: structuredClone(CONCEPT_PRESETS[preset]), baselineScale: 1 });
+    this.update({ preset, camera2: structuredClone(CONCEPT_PRESETS[preset]), baselineScale: 1, lessonFocus: 'preset' });
   }
 
   subscribe(listener: ConceptsListener): () => void {

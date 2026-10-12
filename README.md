@@ -134,17 +134,17 @@ Core Concepts turns the two central matrices into direct-manipulation experiment
 
 ### Fundamental Matrix playground
 
-- Drag `x` in Image 1 and watch `l′ = Fx` move in Image 2.
-- Drag candidate `x′` to change both `x′ᵀFx` and its true perpendicular distance from the line. **Snap x′ to line** makes both approach numerical zero.
-- **Show epipolar pencil** maps several source points through `F`. Their target lines expose `e′`; finite, off-frame, and infinite epipoles receive distinct markers.
-- The rank explanation follows the observation: because `e′ᵀF = 0`, `F` has a nonzero left-null vector and cannot have rank 3. For nondegenerate two-view geometry it has rank 2 and seven projective degrees of freedom.
-- General, rectified, forward-motion, and near-rotation presets use the Lab's exact camera values. Advanced controls edit Camera 2 while Camera 1 remains the visible reference camera.
+- The lesson opens in **Forward motion**, where the visible epipole makes the shared-line geometry easiest to recognize. General, Rectified, and Near rotation retain the Lab's exact camera poses and each includes a concise observation prompt.
+- Drag `x` in Image 1 and watch `l′ = Fx` move in Image 2. Drag candidate `x′` to change both the **Constraint error** `x′ᵀFx` and its true **Distance to epipolar line**. **Snap x′ to line** makes both approach numerical zero.
+- **Show several epipolar lines** reveals the epipolar pencil. Every plane contains the same camera baseline, so every target-image intersection passes through `e′`; finite, off-frame, and infinite epipoles receive distinct accessible markers.
+- Geometry comes before algebra. The baseline explanation stays visible, while the null-space/rank proof and the seven-degree-of-freedom count live in separate **Go deeper** disclosures.
+- A live **What to notice** prompt responds to the most recent drag, preset, pencil, calibration, or scale interaction. Advanced controls edit Camera 2 while Camera 1 remains the visible reference camera.
 
 Both SVG image points support mouse, pen, touch, and arrow-key movement; hold Shift with an arrow key for a ten-pixel step.
 
 ### Essential Matrix playground
 
-The selected `x` and `x′` carry into the calibrated lesson:
+The same interactive image pair stays visible in the calibrated lesson: `x` and `x′` remain draggable with mouse, pen, touch, or keyboard while their normalized coordinates update below.
 
 ```text
 x̂  = K1⁻¹x
@@ -153,9 +153,9 @@ E   = K2ᵀ F K1
 E   = [t]×R
 ```
 
-The displayed normalized plane is the conventional `z = 1` ray-coordinate plane, not a claim about scene depth. Focal length is the primary control; `fx`, `fy`, `cx`, and `cy` are available in the advanced intrinsic editor, with zero skew in this focused version.
+The displayed normalized plane is the conventional `z = 1` ray-coordinate plane, not a claim about scene depth. Focal length is the primary control; `fx`, `fy`, `cx`, and `cy` are available in the advanced intrinsic editor, with zero skew in this focused version. The calibration experiment holds the pose fixed and reports that changing `K` changes normalized coordinates and pixel-space `F`, while pose-derived `E = [t]×R`, `R`, and `t` remain tied to the same physical geometry. `K₂ᵀFK₁` and pose-derived `E` are compared only after canonicalization, up to homogeneous scale and sign.
 
-The baseline experiment holds rotation and translation direction fixed while scaling `t → λt`. Raw `E` and `F` norms scale with `λ`, but their canonical unit-Frobenius forms, epipolar lines, and translation direction remain unchanged. This visually motivates the Essential Matrix's five degrees of freedom: three for rotation and two for translation direction, with metric baseline magnitude unobservable. Zero translation is reported as a degeneracy rather than normalized into a fictitious matrix.
+The guided baseline experiment asks whether `E` reveals camera separation, then holds rotation and translation direction fixed while scaling `t → λt`. Raw `E` and `F` norms scale with `λ`, but their canonical unit-Frobenius forms, epipolar lines, and translation direction remain unchanged. Only after that observation does the page introduce the Essential Matrix's five degrees of freedom: three for rotation and two for translation direction, with metric baseline magnitude unobservable. Zero translation is reported as a degeneracy rather than normalized into a fictitious matrix.
 
 The collapsed pose preview introduces the four `(R,t)` candidates and cheirality without implementing triangulation. **Where does F come from?** summarizes the normalized eight-point pipeline and links to the Photo Lab's actual estimator rather than duplicating it.
 

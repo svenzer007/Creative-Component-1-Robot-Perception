@@ -8,6 +8,8 @@ import {
   CoreConceptsStore,
   IMAGE_HEIGHT,
   IMAGE_WIDTH,
+  PRESET_DESCRIPTIONS,
+  noticeForState,
   snapTargetToLine,
   type ConceptPreset,
   type ConceptSection,
@@ -28,24 +30,31 @@ const MARKUP = `
     <header class="concepts-hero">
       <div>
         <p class="concepts-kicker">Core concepts · calibrated two-view geometry</p>
-        <h1>Make the matrix <span>move.</span></h1>
-        <p>Manipulate image evidence first. Let the algebra explain what you observe.</p>
+        <h1>Core Concepts of <span>Epipolar Geometry</span></h1>
+        <p>See how one image point constrains its match, then connect the geometry to F and E.</p>
+        <small class="concepts-slogan">Make the matrix move: manipulate the evidence first, then let the algebra explain it.</small>
       </div>
       <nav class="concepts-switch" aria-label="Core concept">
         <button type="button" data-section="fundamental" aria-pressed="true">Fundamental matrix</button>
         <button type="button" data-section="essential" aria-pressed="false">Essential matrix</button>
       </nav>
     </header>
-    <section class="concepts-workspace" data-fundamental>
+    <aside class="concepts-symbols" aria-label="Notation used in this lesson">
+      <span><strong>x</strong> source point</span><span><strong>x′</strong> candidate match</span>
+      <span><strong>l′</strong> target epipolar line</span><span><strong>e′</strong> target epipole</span>
+      <small>Lowercase e/e′ are epipoles; uppercase E is the Essential Matrix.</small>
+    </aside>
+    <section class="concepts-workspace" data-measurement-stage>
       <div class="concepts-workspace-heading">
-        <div><span>01 · Observe</span><h2>One point becomes one line</h2><p>Drag <strong>x</strong>. Camera geometry restricts its match to <strong>l′</strong>, not a single pixel.</p></div>
+        <div><span data-stage-step>Step 1 · Observe</span><h2 data-stage-title>One point constrains its match to one line</h2><p data-stage-intro>F maps x to the line l′ where its match must lie.</p><p class="concepts-try" data-stage-try><strong>Try this:</strong> drag x, then drag x′ toward the green line.</p></div>
         <div class="concepts-presets" aria-label="Camera geometry presets">
+          <button type="button" data-preset="forward">Forward</button>
           <button type="button" data-preset="general">General</button>
           <button type="button" data-preset="rectified">Rectified</button>
-          <button type="button" data-preset="forward">Forward</button>
           <button type="button" data-preset="nearRotation">Near rotation</button>
         </div>
       </div>
+      <p class="concepts-preset-description" data-preset-description></p>
 
       <div class="concepts-main-grid">
         <section class="concepts-image-pair" aria-label="Interactive image pair">
@@ -58,16 +67,17 @@ const MARKUP = `
             <svg data-target-svg viewBox="0 0 640 420" tabindex="0" role="application" aria-label="Target image. Drag or use arrow keys to move candidate x prime."></svg>
           </article>
           <div class="concepts-observation" aria-live="polite">
-            <div><span>point → line</span><strong>l′ = Fx</strong><code data-line-value>—</code></div>
-            <div><span>candidate residual</span><strong>x′ᵀFx</strong><code data-residual>—</code></div>
-            <div class="distance-meter"><span>geometric distance</span><strong data-distance>— px</strong><i><b data-distance-bar></b></i></div>
+            <div><span data-primary-label>point → line</span><strong data-primary-formula>l′ = Fx</strong><code data-line-value>—</code></div>
+            <div data-fundamental-observation><span>Constraint error</span><strong>x′ᵀFx</strong><code data-residual>—</code></div>
+            <div data-fundamental-observation class="distance-meter"><span>Distance to epipolar line</span><strong data-distance>— px</strong><i><b data-distance-bar></b></i></div>
             <button type="button" data-snap class="concepts-snap">Snap x′ to line</button>
           </div>
         </section>
 
         <aside class="concepts-controls" aria-label="Core Concepts controls">
           <div class="concepts-control-heading"><span>Experiment controls</span><small data-geometry-summary></small></div>
-          <label class="concepts-toggle"><input data-pencil type="checkbox"><span><strong>Show epipolar pencil</strong><small>Several source points reveal the shared e′.</small></span></label>
+          <label class="concepts-toggle" data-pencil-control><input data-pencil type="checkbox"><span><strong>Show several epipolar lines</strong><small>The epipolar pencil reveals their shared e′.</small></span></label>
+          <div class="concepts-notice" aria-live="polite"><span>What to notice</span><p data-notice></p></div>
           <details data-geometry-details>
             <summary>Camera 2 geometry</summary>
             <div class="concepts-range-list">
@@ -83,32 +93,33 @@ const MARKUP = `
         </aside>
       </div>
 
-      <section class="concepts-reveal">
+      <section class="concepts-reveal" data-fundamental>
         <div class="concepts-workspace-heading compact">
-          <div><span>02 · Explain</span><h2>The line pencil forces rank two</h2><p>Turn on the pencil. Every valid target line passes through the same epipole e′.</p></div>
+          <div><span>Step 2 · Explain</span><h2>Why do all the lines meet at e′?</h2><p class="concepts-try"><strong>Try this:</strong> show several epipolar lines, then switch presets and follow e′.</p></div>
         </div>
         <div class="concepts-reveal-grid">
           <article class="concepts-proof-card">
-            <p class="proof-step">Observed geometry</p>
-            <h3>All l′ pass through e′</h3>
-            <div class="proof-arrow">↓</div>
-            <code>e′ᵀF = 0 &nbsp;⇔&nbsp; Fᵀe′ = 0</code>
-            <p>A nonzero left-null vector means F cannot have full rank 3.</p>
-            <strong>For nondegenerate two-view geometry, rank(F) = 2.</strong>
+            <p class="proof-step">Geometric explanation</p>
+            <h3>Every plane shares the same baseline</h3>
+            <p>Each source ray and the two camera centers form an epipolar plane. Every such plane contains the baseline, whose intersection with Image 2 is e′. Therefore every target line l′ passes through e′.</p>
           </article>
-          <article class="concepts-singular-card">
-            <div><span>Singular values</span><code data-singular-values></code></div>
-            <div class="singular-bars"><i><b data-sigma="0"></b></i><i><b data-sigma="1"></b></i><i><b data-sigma="2"></b></i></div>
-            <p>σ₃ collapses to zero, exposing the null space.</p>
-            <div class="null-checks"><code data-null-source></code><code data-null-target></code></div>
-          </article>
-          <article class="concepts-dof-card">
-            <span>Degrees of freedom</span>
-            <div><strong>9</strong><small>matrix entries</small></div>
-            <b>−</b><div><strong>1</strong><small>homogeneous scale</small></div>
-            <b>−</b><div><strong>1</strong><small>rank constraint</small></div>
-            <b>=</b><div class="dof-result"><strong>7</strong><small>DoF</small></div>
-          </article>
+          <details class="concepts-deep-dive"><summary>Go deeper: Why does this imply rank 2?</summary>
+            <article class="concepts-singular-card">
+              <p><code>e′ᵀF = 0 ⇔ Fᵀe′ = 0</code>. A nonzero left-null vector prevents rank 3; valid nondegenerate F therefore has rank 2.</p>
+              <div><span>Singular values</span><code data-singular-values></code></div>
+              <div class="singular-bars"><i><b data-sigma="0"></b></i><i><b data-sigma="1"></b></i><i><b data-sigma="2"></b></i></div>
+              <div class="null-checks"><code data-null-source></code><code data-null-target></code></div>
+            </article>
+          </details>
+          <details class="concepts-deep-dive"><summary>Go deeper: Why does F have 7 DoF?</summary>
+            <article class="concepts-dof-card">
+              <span>Degrees of freedom</span>
+              <div><strong>9</strong><small>matrix entries</small></div>
+              <b>−</b><div><strong>1</strong><small>homogeneous scale</small></div>
+              <b>−</b><div><strong>1</strong><small>rank constraint</small></div>
+              <b>=</b><div class="dof-result"><strong>7</strong><small>DoF</small></div>
+            </article>
+          </details>
         </div>
         <details class="concepts-matrix-details">
           <summary>Inspect F, epipoles, and relative pose</summary>
@@ -124,13 +135,7 @@ const MARKUP = `
 
     <section class="concepts-essential" data-essential hidden>
       <div class="concepts-workspace-heading">
-        <div><span>01 · Calibrate</span><h2>Pixels are not yet viewing rays</h2><p>Keep the same x and x′. Remove K₁ and K₂ to reach canonical camera coordinates.</p></div>
-        <div class="concepts-presets" aria-label="Essential matrix camera presets">
-          <button type="button" data-preset="general">General</button>
-          <button type="button" data-preset="rectified">Rectified</button>
-          <button type="button" data-preset="forward">Forward</button>
-          <button type="button" data-preset="nearRotation">Near rotation</button>
-        </div>
+        <div><span>Step 2 · Calibrate</span><h2>What does calibration remove?</h2><p>K describes how camera rays become pixels. Applying K⁻¹ removes focal length and principal-point effects, turning x and x′ into normalized ray coordinates.</p><p class="concepts-try"><strong>Try this:</strong> change a focal length and watch x̂, x̂′, and F while the physical pose remains fixed.</p></div>
       </div>
 
       <div class="calibration-grid">
@@ -164,10 +169,14 @@ const MARKUP = `
           </div>
         </details>
         <p class="z-note"><strong>z = 1 is a coordinate convention, not scene depth.</strong> It turns each calibrated pixel into a canonical ray direction [u, v, 1]ᵀ.</p>
+        <article class="calibration-insight">
+          <div><span>F change from default K</span><strong data-f-calibration-change></strong><small>pixel geometry responds to calibration</small></div>
+          <div><span>Pose-derived E change</span><strong data-e-calibration-change></strong><small>physical R and t stay fixed</small></div>
+        </article>
       </div>
 
       <section class="essential-bridge">
-        <div class="concepts-workspace-heading compact"><div><span>02 · Reveal</span><h2>Calibration exposes relative pose</h2><p>Two independent paths reach the same Essential Matrix, up to homogeneous scale and sign.</p></div></div>
+        <div class="concepts-workspace-heading compact"><div><span>Step 3 · Connect</span><h2>Calibration exposes relative pose</h2><p>Two independent paths reach the same Essential Matrix, up to homogeneous scale and sign.</p></div></div>
         <div class="essential-matrix-flow">
           <article><span>From pixel geometry</span><h3>E = K₂ᵀ F K₁</h3><pre data-e-from-f></pre></article>
           <div class="matrix-equivalence"><strong>≈</strong><code data-e-agreement></code><small>scale/sign agreement</small></div>
@@ -177,7 +186,7 @@ const MARKUP = `
       </section>
 
       <section class="scale-experiment">
-        <div class="concepts-workspace-heading compact"><div><span>03 · Experiment</span><h2>Stretch the baseline. Keep the epipolar geometry.</h2><p>E recovers translation direction—not metric translation magnitude or global scene scale.</p></div></div>
+        <div class="concepts-workspace-heading compact"><div><span>Step 4 · Experiment</span><h2>Can E tell how far apart the cameras are?</h2><p class="concepts-try"><strong>Try this:</strong> move the baseline multiplier and compare the raw norms with the canonical drift values.</p></div></div>
         <div class="scale-grid">
           <article class="baseline-card">
             <svg data-baseline-svg viewBox="0 0 500 240" role="img" aria-label="Top-down camera baseline scale diagram"></svg>
@@ -190,16 +199,17 @@ const MARKUP = `
             <div class="invariant"><span>canonical E drift</span><strong data-e-drift></strong><small>unchanged</small></div>
             <div class="invariant"><span>canonical F drift</span><strong data-f-drift></strong><small>same lines</small></div>
           </article>
-          <article class="dof-five-card">
-            <span>Essential Matrix · 5 DoF</span>
-            <div class="rotation-dof"><strong>3</strong><p>rotation<br><small>roll · pitch · yaw</small></p></div>
-            <b>+</b>
-            <div class="translation-dof"><strong>2</strong><p>translation direction<br><small>azimuth · elevation</small></p></div>
-            <b>=</b><strong class="five">5</strong>
-            <p class="scale-excluded">Baseline magnitude is intentionally outside the count.</p>
-            <code data-translation-direction></code>
-          </article>
         </div>
+        <p class="scale-takeaway"><strong>Takeaway:</strong> E recovers translation direction, not metric baseline magnitude or global scene scale. Scaling t only scales the raw homogeneous matrices.</p>
+        <article class="dof-five-card">
+          <span>Therefore, the Essential Matrix has 5 DoF</span>
+          <div class="rotation-dof"><strong>3</strong><p>rotation<br><small>roll · pitch · yaw</small></p></div>
+          <b>+</b>
+          <div class="translation-dof"><strong>2</strong><p>translation direction<br><small>azimuth · elevation</small></p></div>
+          <b>=</b><strong class="five">5</strong>
+          <p class="scale-excluded">Baseline magnitude is intentionally outside the count.</p>
+          <code data-translation-direction></code>
+        </article>
         <div class="essential-singular"><span>Essential singular values</span><code data-essential-singular></code><small>ideal structure: (σ, σ, 0)</small></div>
       </section>
 
@@ -234,17 +244,17 @@ class ConceptsPage implements Page {
     container.innerHTML = MARKUP;
     const buttons = [...container.querySelectorAll<HTMLButtonElement>('[data-section]')];
     buttons.forEach((button) => button.addEventListener('click', () => {
-      this.store.update({ section: button.dataset.section as ConceptSection });
+      this.store.update({ section: button.dataset.section as ConceptSection, lessonFocus: 'intro' });
     }));
     container.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((button) => {
       button.addEventListener('click', () => this.store.applyPreset(button.dataset.preset as ConceptPreset));
     });
     container.querySelector<HTMLInputElement>('[data-pencil]')!.addEventListener('change', (event) => {
-      this.store.update({ showPencil: (event.currentTarget as HTMLInputElement).checked });
+      this.store.update({ showPencil: (event.currentTarget as HTMLInputElement).checked, lessonFocus: 'pencil' });
     });
     container.querySelector<HTMLButtonElement>('[data-snap]')!.addEventListener('click', () => {
       const targetPixel = snapTargetToLine(this.store.snapshot());
-      if (targetPixel) this.store.update({ targetPixel });
+      if (targetPixel) this.store.update({ targetPixel, lessonFocus: 'target' });
     });
     const details = container.querySelector<HTMLDetailsElement>('[data-geometry-details]')!;
     details.addEventListener('toggle', () => this.store.update({ showAdvancedGeometry: details.open }));
@@ -255,18 +265,24 @@ class ConceptsPage implements Page {
       input.addEventListener('input', () => {
         const which = input.dataset.focal === '1' ? 'intrinsics1' : 'intrinsics2';
         const value = Number(input.value);
-        this.store.update({ [which]: { ...this.store.getState()[which], fx: value, fy: value } });
+        this.store.update({
+          [which]: { ...this.store.getState()[which], fx: value, fy: value },
+          lessonFocus: 'calibration',
+        });
       });
     });
     container.querySelectorAll<HTMLInputElement>('[data-intrinsics]').forEach((input) => {
       input.addEventListener('input', () => {
         const [camera, field] = input.dataset.intrinsics!.split(':') as ['1' | '2', keyof IntrinsicsControls];
         const key = camera === '1' ? 'intrinsics1' : 'intrinsics2';
-        this.store.update({ [key]: { ...this.store.getState()[key], [field]: Number(input.value) } });
+        this.store.update({
+          [key]: { ...this.store.getState()[key], [field]: Number(input.value) },
+          lessonFocus: 'calibration',
+        });
       });
     });
     container.querySelector<HTMLInputElement>('[data-baseline-scale]')!.addEventListener('input', (event) => {
-      this.store.update({ baselineScale: Number((event.currentTarget as HTMLInputElement).value) });
+      this.store.update({ baselineScale: Number((event.currentTarget as HTMLInputElement).value), lessonFocus: 'scale' });
     });
     const sourceSvg = container.querySelector<SVGSVGElement>('[data-source-svg]')!;
     const targetSvg = container.querySelector<SVGSVGElement>('[data-target-svg]')!;
@@ -283,7 +299,9 @@ class ConceptsPage implements Page {
   private bindImageInteraction(svg: SVGSVGElement, kind: 'source' | 'target'): void {
     const update = (event: PointerEvent): void => {
       const point = clientToImagePixel(event.clientX, event.clientY, svg.getBoundingClientRect(), IMAGE_WIDTH, IMAGE_HEIGHT);
-      this.store.update(kind === 'source' ? { sourcePixel: point } : { targetPixel: point });
+      this.store.update(kind === 'source'
+        ? { sourcePixel: point, lessonFocus: 'source' }
+        : { targetPixel: point, lessonFocus: 'target' });
     };
     svg.addEventListener('pointerdown', (event) => {
       if (event.button !== 0) return;
@@ -314,7 +332,9 @@ class ConceptsPage implements Page {
         Math.min(IMAGE_WIDTH, Math.max(0, current[0] + direction[0] * step)),
         Math.min(IMAGE_HEIGHT, Math.max(0, current[1] + direction[1] * step)),
       ];
-      this.store.update(kind === 'source' ? { sourcePixel: point } : { targetPixel: point });
+      this.store.update(kind === 'source'
+        ? { sourcePixel: point, lessonFocus: 'source' }
+        : { targetPixel: point, lessonFocus: 'target' });
     });
   }
 
@@ -329,7 +349,7 @@ class ConceptsPage implements Page {
     } else {
       camera2 = { ...state.camera2, [field]: value };
     }
-    this.store.update({ camera2, baselineScale: 1 });
+    this.store.update({ camera2, baselineScale: 1, lessonFocus: 'preset' });
   }
 
   private render(
@@ -339,7 +359,26 @@ class ConceptsPage implements Page {
     state: CoreConceptsState,
     snapshot: CoreConceptsSnapshot,
   ): void {
-    renderImagePair(sourceSvg, targetSvg, snapshot);
+    const isFundamental = state.section === 'fundamental';
+    renderImagePair(sourceSvg, targetSvg, snapshot, isFundamental && state.showPencil);
+    container.querySelector<HTMLElement>('[data-stage-step]')!.textContent = isFundamental
+      ? 'Step 1 · Observe' : 'Step 1 · Start with the same measurements';
+    container.querySelector<HTMLElement>('[data-stage-title]')!.textContent = isFundamental
+      ? 'One point constrains its match to one line' : 'What is the Essential Matrix for?';
+    container.querySelector<HTMLElement>('[data-stage-intro]')!.textContent = isFundamental
+      ? 'The Fundamental Matrix maps x to the target line l′ where its match must lie.'
+      : 'E expresses this same two-view constraint after camera calibration removes pixel-coordinate effects.';
+    container.querySelector<HTMLElement>('[data-stage-try]')!.innerHTML = isFundamental
+      ? '<strong>Try this:</strong> drag x, then drag x′ toward the green line.'
+      : '<strong>Try this:</strong> drag the same x and x′ here, then watch their normalized coordinates below.';
+    container.querySelector<HTMLElement>('[data-pencil-control]')!.hidden = !isFundamental;
+    container.querySelectorAll<HTMLElement>('[data-fundamental-observation]').forEach((element) => {
+      element.hidden = !isFundamental;
+    });
+    container.querySelector<HTMLElement>('.concepts-observation')!.classList.toggle('is-essential', !isFundamental);
+    container.querySelector<HTMLButtonElement>('[data-snap]')!.hidden = !isFundamental;
+    container.querySelector<HTMLElement>('[data-preset-description]')!.textContent = PRESET_DESCRIPTIONS[state.preset];
+    container.querySelector<HTMLElement>('[data-notice]')!.textContent = noticeForState(state, snapshot);
     renderNormalizedPlanes(
       container.querySelector<SVGSVGElement>('[data-normalized-source-svg]')!,
       container.querySelector<SVGSVGElement>('[data-normalized-target-svg]')!,
@@ -348,7 +387,11 @@ class ConceptsPage implements Page {
     renderBaselineDiagram(container.querySelector<SVGSVGElement>('[data-baseline-svg]')!, snapshot);
     container.querySelector<HTMLInputElement>('[data-pencil]')!.checked = state.showPencil;
     const line = snapshot.fundamentalLine;
-    container.querySelector<HTMLElement>('[data-line-value]')!.textContent = line ? formatVector(line, 3) : 'undefined';
+    container.querySelector<HTMLElement>('[data-primary-label]')!.textContent = isFundamental ? 'point → line' : 'same image measurements';
+    container.querySelector<HTMLElement>('[data-primary-formula]')!.textContent = isFundamental ? 'l′ = Fx' : 'x ↔ x′';
+    container.querySelector<HTMLElement>('[data-line-value]')!.textContent = isFundamental
+      ? line ? formatVector(line, 3) : 'undefined'
+      : `${formatVector(snapshot.sourcePoint, 1)} ↔ ${formatVector(snapshot.targetPoint, 1)}`;
     container.querySelector<HTMLElement>('[data-residual]')!.textContent = snapshot.algebraicResidual === null
       ? 'undefined' : snapshot.algebraicResidual.toExponential(3);
     container.querySelector<HTMLElement>('[data-distance]')!.textContent = snapshot.distance === null
@@ -418,6 +461,10 @@ class ConceptsPage implements Page {
       ? formatMatrix(snapshot.essentialCanonical) : 'E = 0';
     container.querySelector<HTMLElement>('[data-e-agreement]')!.textContent = snapshot.essentialAgreement === null
       ? 'undefined' : snapshot.essentialAgreement.toExponential(2);
+    container.querySelector<HTMLElement>('[data-f-calibration-change]')!.textContent = snapshot.fundamentalCalibrationChange === null
+      ? 'undefined' : snapshot.fundamentalCalibrationChange.toExponential(2);
+    container.querySelector<HTMLElement>('[data-e-calibration-change]')!.textContent = snapshot.essentialPoseCalibrationChange === null
+      ? 'undefined' : snapshot.essentialPoseCalibrationChange.toExponential(2);
     container.querySelector<HTMLElement>('[data-normalized-residual]')!.textContent = snapshot.normalizedResidual === null
       ? 'undefined' : snapshot.normalizedResidual.toExponential(3);
     const scale = container.querySelector<HTMLInputElement>('[data-baseline-scale]')!;

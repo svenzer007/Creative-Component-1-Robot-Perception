@@ -75,15 +75,18 @@ export function epipoleMarker(epipole: EpipoleResult | null): EpipoleMarker | nu
 const epipoleSvg = (epipole: EpipoleResult | null, label: string): string => {
   const marker = epipoleMarker(epipole);
   if (!marker) return '';
-  if (!marker.offscreen) return `
+  const side = label === 'e' ? 'source' : 'target';
+  const location = marker.infinite ? 'at infinity' : marker.offscreen ? 'outside the visible image' : 'inside the visible image';
+  const description = `${side} epipole ${label}, where the camera baseline meets the ${side} image plane; ${location}`;
+  if (!marker.offscreen) return `<g role="img" aria-label="${description}"><title>${description}</title>
     <circle class="concept-epipole" cx="${marker.x}" cy="${marker.y}" r="7"/>
-    <text class="concept-point-label epipole-label" x="${marker.x + 11}" y="${marker.y - 10}">${label}</text>`;
+    <text class="concept-point-label epipole-label" x="${marker.x + 11}" y="${marker.y - 10}">${label}</text></g>`;
   const radians = marker.angle * Math.PI / 180;
   const inwardX = marker.x - Math.cos(radians) * 22;
   const inwardY = marker.y - Math.sin(radians) * 22;
-  return `
+  return `<g role="img" aria-label="${description}"><title>${description}</title>
     <line class="concept-epipole-arrow" x1="${inwardX}" y1="${inwardY}" x2="${marker.x}" y2="${marker.y}" marker-end="url(#epipole-arrow)"/>
-    <text class="concept-point-label epipole-label" x="${Math.min(IMAGE_WIDTH - 58, Math.max(8, marker.x - 23))}" y="${Math.min(IMAGE_HEIGHT - 8, Math.max(18, marker.y - 13))}">${label}${marker.infinite ? ' ∞' : ' ↗'}</text>`;
+    <text class="concept-point-label epipole-label" x="${Math.min(IMAGE_WIDTH - 58, Math.max(8, marker.x - 23))}" y="${Math.min(IMAGE_HEIGHT - 8, Math.max(18, marker.y - 13))}">${label}${marker.infinite ? ' ∞' : ' ↗'}</text></g>`;
 };
 
 const definitions = `
@@ -97,8 +100,9 @@ export function renderImagePair(
   sourceSvg: SVGSVGElement,
   targetSvg: SVGSVGElement,
   snapshot: CoreConceptsSnapshot,
+  showPencil = snapshot.state.showPencil,
 ): void {
-  const { sourcePixel, targetPixel, showPencil } = snapshot.state;
+  const { sourcePixel, targetPixel } = snapshot.state;
   const sourcePencil = showPencil
     ? snapshot.pencil.map((entry, index) => `<circle class="concept-family-point family-${index}" cx="${entry.source[0]}" cy="${entry.source[1]}" r="5"/>`).join('')
     : '';

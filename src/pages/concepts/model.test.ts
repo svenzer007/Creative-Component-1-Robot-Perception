@@ -6,6 +6,8 @@ import {
   DEFAULT_CONCEPTS_STATE,
   deriveConcepts,
   intrinsicsMatrix,
+  noticeForState,
+  PRESET_DESCRIPTIONS,
   snapTargetToLine,
 } from './model';
 import { epipoleMarker } from './views';
@@ -17,6 +19,20 @@ describe('Core Concepts local state', () => {
     expect(store.getState().section).toBe('essential');
     expect(store.getState().sourcePixel).toEqual([120, 90]);
     expect(DEFAULT_CONCEPTS_STATE.section).toBe('fundamental');
+    expect(DEFAULT_CONCEPTS_STATE.preset).toBe('forward');
+    expect(DEFAULT_CONCEPTS_STATE.camera2).toEqual(CONCEPT_PRESETS.forward);
+  });
+
+  it('provides concise preset and action-specific learning guidance', () => {
+    const snapshot = deriveConcepts(DEFAULT_CONCEPTS_STATE);
+    expect(PRESET_DESCRIPTIONS.forward).toContain('radiate');
+    expect(PRESET_DESCRIPTIONS.rectified).toContain('horizontal');
+    expect(noticeForState(DEFAULT_CONCEPTS_STATE, snapshot)).toContain('visible epipole');
+    expect(noticeForState({ ...DEFAULT_CONCEPTS_STATE, lessonFocus: 'source' }, snapshot)).toContain('allowed line');
+    expect(noticeForState({ ...DEFAULT_CONCEPTS_STATE, lessonFocus: 'target' }, snapshot)).toContain('approaches zero');
+    expect(noticeForState({ ...DEFAULT_CONCEPTS_STATE, lessonFocus: 'pencil', showPencil: true }, snapshot)).toContain('same epipole');
+    expect(noticeForState({ ...DEFAULT_CONCEPTS_STATE, section: 'essential', lessonFocus: 'calibration' }, snapshot)).toContain('physical pose');
+    expect(noticeForState({ ...DEFAULT_CONCEPTS_STATE, section: 'essential', lessonFocus: 'scale' }, snapshot)).toContain('raw E and F');
   });
 
   it('applies shared Lab preset values and resets baseline scale', () => {
@@ -146,5 +162,9 @@ describe('Core Concepts local state', () => {
     expect(changed.sourceNormalized).not.toEqual(first.sourceNormalized);
     expect(changed.sourceNormalized[0]).toBeCloseTo((state.sourcePixel[0] - 280) / 800, 12);
     expect(changed.fundamentalCanonical).not.toEqual(first.fundamentalCanonical);
+    expect(changed.fundamentalCalibrationChange).toBeGreaterThan(1e-4);
+    expect(changed.essentialPoseCalibrationChange).toBeLessThan(1e-12);
+    expect(changed.relativeRotation).toEqual(first.relativeRotation);
+    expect(changed.relativeTranslation).toEqual(first.relativeTranslation);
   });
 });
