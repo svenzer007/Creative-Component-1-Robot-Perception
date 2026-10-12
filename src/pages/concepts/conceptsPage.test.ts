@@ -72,4 +72,14 @@ describe('Core Concepts page', () => {
     cx.dispatchEvent(new Event('input', { bubbles: true }));
     expect(container.querySelector<HTMLElement>('[data-normalized-source]')!.textContent).not.toBe(afterFocal);
   });
+
+  it('links the supporting estimator lesson to the existing labs', () => {
+    const page = createPage();
+    const container = document.createElement('section');
+    page.mount(container);
+    const links = [...container.querySelectorAll<HTMLAnchorElement>('.bridge-actions a')];
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['#/photos', '#/lab']);
+    expect(container.querySelector('.estimation-flow')?.textContent).toContain('Af = 0');
+    expect(container.querySelector('.estimation-flow')?.textContent).toContain('rank(F) = 2');
+  });
 });

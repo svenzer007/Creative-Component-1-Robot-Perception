@@ -208,6 +208,21 @@ const MARKUP = `
         <div><strong>2 candidate rotations × 2 translation signs = 4 (R, t) candidates</strong><p>Triangulation and a positive-depth (cheirality) test select the physically valid configuration. This focused v1 stops before that decomposition.</p></div>
       </details>
     </section>
+
+    <section class="concepts-bridge" aria-label="Where the Fundamental Matrix comes from">
+      <details>
+        <summary><span>Supporting concept</span><strong>Where does F come from?</strong><small>Open the normalized eight-point pipeline</small></summary>
+        <div class="estimation-flow">
+          <div><b>1</b><span>correspondences</span><code>xᵢ ↔ xᵢ′</code></div><i>→</i>
+          <div><b>2</b><span>one constraint each</span><code>xᵢ′ᵀFxᵢ = 0</code></div><i>→</i>
+          <div><b>3</b><span>stack the rows</span><code>Af = 0</code></div><i>→</i>
+          <div><b>4</b><span>solve with SVD</span><code>f = v₉</code></div><i>→</i>
+          <div><b>5</b><span>restore geometry</span><code>rank(F) = 2</code></div>
+        </div>
+        <p>The Photo Lab performs Hartley normalization, estimates F inside MSAC/RANSAC, enforces rank two, and reports held-out geometric error. Core Concepts reuses that tested math instead of building a second estimator.</p>
+        <div class="bridge-actions"><a href="#/photos">Open Photo Lab <span>→</span></a><a href="#/lab">Explore the 3D construction <span>→</span></a></div>
+      </details>
+    </section>
   </main>`;
 
 class ConceptsPage implements Page {

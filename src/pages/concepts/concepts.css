@@ -220,6 +220,23 @@
 .concepts-page .next-concepts div { padding: 0 16px 16px; }
 .concepts-page .next-concepts strong { font-size: .74rem; }
 .concepts-page .next-concepts p { max-width: 82ch; margin: 8px 0 0; color: var(--muted); font-size: .68rem; line-height: 1.5; }
+.concepts-page .concepts-bridge { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 22px; }
+.concepts-page .concepts-bridge > details { overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(135deg, rgba(82, 214, 255, .05), rgba(159, 134, 255, .035)); }
+.concepts-page .concepts-bridge summary { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 15px 17px; cursor: pointer; }
+.concepts-page .concepts-bridge summary::marker { color: var(--c1); }
+.concepts-page .concepts-bridge summary span { color: var(--c1); font: 800 .58rem ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; }
+.concepts-page .concepts-bridge summary strong { font-size: .82rem; }
+.concepts-page .concepts-bridge summary small { color: var(--muted); font-size: .61rem; }
+.concepts-page .estimation-flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto 1fr; gap: 8px; align-items: center; padding: 2px 17px 15px; }
+.concepts-page .estimation-flow > div { display: grid; gap: 5px; min-height: 94px; align-content: center; border: 1px solid var(--line); border-radius: 9px; background: rgba(8, 11, 18, .72); padding: 10px; }
+.concepts-page .estimation-flow b { width: 20px; height: 20px; display: grid; place-content: center; border-radius: 50%; background: rgba(82, 214, 255, .12); color: var(--c1); font: .58rem ui-monospace, monospace; }
+.concepts-page .estimation-flow span { color: var(--muted); font-size: .57rem; }
+.concepts-page .estimation-flow code { color: var(--epiline); font: .65rem ui-monospace, monospace; }
+.concepts-page .estimation-flow > i { color: var(--muted); font-style: normal; }
+.concepts-page .concepts-bridge details > p { max-width: 100ch; margin: 0; padding: 0 17px 15px; color: var(--muted); font-size: .68rem; line-height: 1.5; }
+.concepts-page .bridge-actions { display: flex; gap: 8px; padding: 0 17px 17px; }
+.concepts-page .bridge-actions a { display: inline-flex; justify-content: space-between; gap: 22px; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; color: var(--c1); font-size: .66rem; font-weight: 750; text-decoration: none; }
+.concepts-page .bridge-actions a:hover { border-color: rgba(82, 214, 255, .55); background: rgba(82, 214, 255, .06); }
 
 @media (max-width: 760px) {
   .concepts-page { --concepts-width: min(100% - 22px, 1440px); }
@@ -244,6 +261,10 @@
   .concepts-page .scale-grid { grid-template-columns: 1fr; }
   .concepts-page .essential-singular { align-items: flex-start; flex-direction: column; }
   .concepts-page .essential-singular small { margin-left: 0; }
+  .concepts-page .concepts-bridge summary { grid-template-columns: 1fr; }
+  .concepts-page .estimation-flow { grid-template-columns: 1fr; }
+  .concepts-page .estimation-flow > i { transform: rotate(90deg); text-align: center; }
+  .concepts-page .bridge-actions { flex-direction: column; }
 }
 
 @media (min-width: 761px) and (max-width: 1120px) {
