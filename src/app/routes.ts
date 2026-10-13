@@ -6,6 +6,13 @@ import type { RouteDefinition } from './router';
  */
 export const ROUTES: readonly RouteDefinition[] = [
   {
+    id: 'home',
+    path: '/home',
+    label: 'Home',
+    title: 'Epipolar Geometry Lab',
+    load: () => import('../pages/home/homePage'),
+  },
+  {
     id: 'start',
     path: '/start',
     label: 'Start here',
@@ -16,7 +23,7 @@ export const ROUTES: readonly RouteDefinition[] = [
     id: 'lab',
     path: '/lab',
     label: '3D lab',
-    title: 'Epipolar Geometry Lab',
+    title: '3D lab · Epipolar Geometry Lab',
     load: () => import('../pages/lab/labPage'),
   },
   {
@@ -42,5 +49,5 @@ export const ROUTES: readonly RouteDefinition[] = [
   },
 ];
 
-/** The 3D lab stays the landing page, so existing links and the presentation flow keep working. */
-export const DEFAULT_ROUTE_ID = 'lab';
+/** Home is the landing page: the bare URL and unknown paths open it. Links such as #/lab keep working. */
+export const DEFAULT_ROUTE_ID = 'home';

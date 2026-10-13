@@ -1,0 +1,147 @@
+/* Landing page: hero with a living diagram, three equal author frames, and a directory of every tab. */
+
+.home-page {
+  min-height: calc(100vh - 61px);
+  background:
+    radial-gradient(circle at 82% -8%, rgba(82, 214, 255, .08), transparent 52%),
+    radial-gradient(circle at -6% 46%, rgba(159, 134, 255, .05), transparent 42%),
+    var(--bg);
+}
+.home-shell { width: min(1440px, calc(100% - 40px)); margin-inline: auto; padding: 26px 0 60px; }
+.home-eyebrow { margin: 0 0 10px; color: var(--c1); font: 800 .68rem/1.2 ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
+/* Starts from a visible state: if animations are throttled or never run, the content still reads. */
+@keyframes home-rise { from { opacity: .4; transform: translateY(10px); } }
+
+/* ---------- hero ---------- */
+.home-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .95fr); gap: 28px 44px; align-items: center; padding: 24px 0 38px; }
+.home-hero-copy > * { animation: home-rise .6s cubic-bezier(.2, .8, .2, 1) both; }
+.home-hero-copy > :nth-child(2) { animation-delay: 60ms; }
+.home-hero-copy > :nth-child(3) { animation-delay: 120ms; }
+.home-hero-copy > :nth-child(4) { animation-delay: 180ms; }
+.home-hero-copy > :nth-child(5) { animation-delay: 240ms; }
+.home-hero h1 { margin: 0 0 18px; font-size: clamp(2.5rem, 5.4vw, 4.7rem); line-height: .97; letter-spacing: -.055em; text-wrap: balance; }
+.home-hero h1 span { color: var(--c1); font-weight: 420; }
+.home-lede { max-width: 60ch; margin: 0 0 12px; color: var(--muted); font-size: 1.02rem; line-height: 1.65; }
+.home-lede:first-of-type { color: #c6d3e4; }
+.home-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 24px; }
+.home-cta { display: inline-flex; align-items: center; padding: 11px 16px; border: 1px solid #54cde8; border-radius: 9px; text-decoration: none; transition: background .18s, transform .18s; }
+.home-cta:hover { transform: translateY(-1px); }
+.home-cta:focus-visible { outline: 2px solid var(--c1); outline-offset: 3px; }
+.home-figure {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: radial-gradient(circle at 55% 40%, #15253a 0, #0c111a 55%, #080a10 100%);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .45);
+  animation: home-rise .7s .15s cubic-bezier(.2, .8, .2, 1) both;
+}
+.home-figure-svg { display: block; width: 100%; height: auto; }
+.home-figure-svg [hidden] { display: none; }
+.home-figure-label { font: 700 13px ui-monospace, monospace; paint-order: stroke; stroke: #0b1019; stroke-width: 4px; stroke-linejoin: round; }
+.home-figure-glow { filter: drop-shadow(0 0 6px rgba(255, 95, 162, .85)); }
+
+/* ---------- section headings ---------- */
+.home-section-head { display: grid; gap: 4px; margin-bottom: 18px; }
+.home-section-head .home-eyebrow { margin-bottom: 4px; }
+.home-section-head h2 { margin: 0; font-size: clamp(1.35rem, 2.3vw, 1.8rem); letter-spacing: -.035em; }
+.home-section-head p:last-child { margin: 0; color: var(--muted); font-size: .85rem; }
+
+/* ---------- authors: three equal camera frames ---------- */
+.home-authors { padding: 32px 0 8px; border-top: 1px solid var(--line); }
+.home-author-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.home-author {
+  --author: var(--c1);
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  padding: 28px 28px 26px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--author) 8%, transparent), transparent 62%), var(--surface);
+  transition: border-color .25s, transform .25s, box-shadow .25s;
+}
+.home-author:hover {
+  border-color: color-mix(in srgb, var(--author) 60%, transparent);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 44px -20px color-mix(in srgb, var(--author) 55%, transparent);
+}
+.home-corner { position: absolute; width: 16px; height: 16px; border: 2px solid var(--author); opacity: .6; pointer-events: none; transition: opacity .25s, transform .25s; }
+.home-corner.tl { top: 10px; left: 10px; border-right: 0; border-bottom: 0; }
+.home-corner.tr { top: 10px; right: 10px; border-left: 0; border-bottom: 0; }
+.home-corner.bl { bottom: 10px; left: 10px; border-right: 0; border-top: 0; }
+.home-corner.br { right: 10px; bottom: 10px; border-left: 0; border-top: 0; }
+.home-author:hover .home-corner { opacity: 1; }
+.home-author:hover .tl { transform: translate(-3px, -3px); }
+.home-author:hover .tr { transform: translate(3px, -3px); }
+.home-author:hover .bl { transform: translate(-3px, 3px); }
+.home-author:hover .br { transform: translate(3px, 3px); }
+.home-author-badge {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 10px;
+  border-radius: 11px;
+  background: var(--author);
+  box-shadow: 0 0 22px -4px var(--author);
+  color: #061018;
+  font-weight: 800;
+  font-size: .95rem;
+  letter-spacing: .02em;
+}
+.home-author h3 { margin: 0; font-size: 1.18rem; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.home-author p { margin: 0; color: var(--muted); font-size: .85rem; line-height: 1.45; }
+.home-affiliation { display: flex; align-items: center; gap: 14px; margin: 20px 0 0; color: var(--muted); font: 700 .68rem/1.3 ui-monospace, monospace; letter-spacing: .12em; text-align: center; text-transform: uppercase; }
+.home-affiliation::before, .home-affiliation::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+/* ---------- directory ---------- */
+.home-pages { padding: 38px 0 0; }
+.home-page-list { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+.home-page-list li { display: flex; min-width: 0; animation: home-rise .55s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i) * 70ms + 120ms); }
+.home-page-card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 100%;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color .2s, transform .2s, background-color .2s;
+}
+.home-page-card:hover { border-color: var(--c1); background-color: #131b28; transform: translateY(-3px); }
+.home-page-card:focus-visible { outline: 2px solid var(--c1); outline-offset: 3px; }
+.home-page-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.home-page-number { color: var(--muted); font: 700 .72rem ui-monospace, monospace; }
+.home-page-verb { color: var(--epiline); font: 800 .62rem ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
+.home-page-card strong { font-size: 1.12rem; letter-spacing: -.02em; }
+.home-page-card p { flex: 1; margin: 0; color: var(--muted); font-size: .82rem; line-height: 1.5; }
+.home-page-open { display: inline-flex; align-items: center; gap: 6px; color: var(--c1); font-size: .76rem; font-weight: 700; }
+.home-page-open span { transition: transform .2s; }
+.home-page-card:hover .home-page-open span { transform: translateX(4px); }
+
+@media (max-width: 1240px) { .home-page-list { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 960px) {
+  .home-hero { grid-template-columns: minmax(0, 1fr); padding-top: 12px; }
+  .home-page-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .home-shell { width: min(100% - 22px, 1440px); }
+  .home-page-list { grid-template-columns: minmax(0, 1fr); }
+  /* Authors stay side by side at every width: same size, same type, nobody above anybody. */
+  .home-author-grid { gap: 8px; }
+  .home-author { justify-items: center; gap: 4px; padding: 20px 8px 16px; text-align: center; }
+  .home-author-badge { width: 34px; height: 34px; margin-bottom: 6px; border-radius: 9px; font-size: .78rem; }
+  .home-author h3 { font-size: .86rem; }
+  .home-author p { font-size: .66rem; }
+  .home-corner { width: 10px; height: 10px; }
+  .home-corner.tl, .home-corner.tr { top: 7px; }
+  .home-corner.bl, .home-corner.br { bottom: 7px; }
+  .home-corner.tl, .home-corner.bl { left: 7px; }
+  .home-corner.tr, .home-corner.br { right: 7px; }
+}

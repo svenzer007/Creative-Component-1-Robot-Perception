@@ -4,11 +4,16 @@ An interactive teaching lab for **NYU Tandon ROB-GY 6203 Robot Perception — Cr
 
 **Core question:** Given a point in one image, where can its correspondence be in the second image?
 
-The app has three tabs, linked from the bar at the top of every page:
+By Stavan Christian, Ernest Saakian, and Sai Sriya Tulluri (listed alphabetically by surname), NYU Tandon School of Engineering.
 
-- **3D lab** (`#/lab`, the landing page): synthetic normalized cameras in a 3D scene. It builds the epipolar plane and line step by step and checks the geometry against `F`.
+The app has six tabs, linked from the bar at the top of every page:
+
+- **Home** (`#/home`, the landing page): what the project explains and why it matters, the authors, and a card for every other tab. A live diagram shows a point sliding along one camera's ray while its image slides along one epipolar line in the other.
+- **Start here** (`#/start`): a two-minute narrated intro video with chapters.
+- **3D lab** (`#/lab`): synthetic normalized cameras in a 3D scene. It builds the epipolar plane and line step by step and checks the geometry against `F`.
 - **Core concepts** (`#/concepts`): manipulate `x`, `x′`, `F`, intrinsics, and baseline scale to make the Fundamental and Essential Matrices visible rather than merely symbolic.
 - **Photo lab** (`#/photos`): the same constraint on real images. Upload or take 2–4 photos of one scene (or start from a built-in ray-traced room), and the app estimates `F` on your device. Point at anything and its epipolar line appears in every other photo.
+- **Applications** (`#/applications`): real systems that depend on epipolar geometry, each with sources.
 
 ## Conceptual walkthrough
 
@@ -243,11 +248,16 @@ src/
   styles.css               shared tokens and the 3D lab's interface
   types.ts                 shared state and geometry contracts
   app/
-    router.ts              hash routes (#/lab, #/concepts, #/photos) with fallback
+    router.ts              hash routes (#/home, #/lab, #/photos, …) with fallback to Home
     routes.ts              the tab list; one entry per lab
     shell.ts, shell.css    route bar, lazy page mounting, keep-alive, transitions
     page.ts                mount / activate / deactivate contract for tabs
   pages/
+    home/
+      homePage.ts          landing page: intro, authors, a card for every tab
+      heroFigure.ts        live two-camera diagram built on the lab's camera model
+    start/startPage.ts     narrated intro video with chapters
+    applications/          the Applications tab (content in ui/applications*.ts)
     lab/labPage.ts         the 3D lab, mounted as a tab
     concepts/
       conceptsPage.ts      Fundamental/Essential interaction controller
