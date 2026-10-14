@@ -30,6 +30,14 @@ describe('Home page', () => {
     expect(container.querySelector('.home-affiliation')?.textContent).toBe(AFFILIATION);
   });
 
+  it('uses the NYU logo as every author avatar, with no ordering note under the heading', () => {
+    const container = mounted();
+    const logos = [...container.querySelectorAll<HTMLImageElement>('.home-author .home-author-badge img')];
+    expect(logos).toHaveLength(AUTHORS.length);
+    logos.forEach((logo) => expect(logo.getAttribute('src')).toMatch(/media\/nyu-logo\.png$/));
+    expect(container.querySelector('.home-authors .home-section-head')?.textContent).not.toMatch(/alphabetically/i);
+  });
+
   it('introduces every other tab, in bar order, with in-app links', () => {
     const container = mounted();
     const routes = directoryRoutes();

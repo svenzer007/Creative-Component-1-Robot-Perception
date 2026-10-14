@@ -1,4 +1,4 @@
-import './startPage.css';
+import './introPage.css';
 import type { Page } from '../../app/page';
 
 // Times are where the narration for each chapter begins (about 1 s before the scene change).
@@ -15,31 +15,31 @@ const CHAPTERS: { t: number; label: string }[] = [
 
 const fmt = (s: number): string => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
-/** "Start here": a 2-minute narrated intro to epipolar geometry, before the labs. */
-class StartPage implements Page {
+/** The 2-minute intro: a narrated intro to epipolar geometry, before the labs. */
+class IntroPage implements Page {
   private video: HTMLVideoElement | null = null;
 
   mount(container: HTMLElement): void {
     const base = import.meta.env.BASE_URL;
-    container.classList.add('start-page');
+    container.classList.add('intro-page');
     container.innerHTML = `
-      <div class="start-shell">
-        <header class="start-hero">
-          <p class="start-kicker">Start here · 2-minute intro</p>
+      <div class="intro-shell">
+        <header class="intro-hero">
+          <p class="intro-kicker">2-minute intro</p>
           <h1>One pixel, <span>one line.</span></h1>
-          <p class="start-lede">New to epipolar geometry? Watch this short animated explainer first. It builds the idea from scratch:
+          <p class="intro-lede">New to epipolar geometry? Watch this short animated explainer first. It builds the idea from scratch:
           why one photo loses depth, how a second camera turns a point into a line, and why that matters for robots.</p>
         </header>
 
-        <div class="start-grid">
-          <figure class="start-video">
+        <div class="intro-grid">
+          <figure class="intro-video">
             <video controls preload="metadata" playsinline poster="${base}media/epipolar-basics-poster.jpg">
               <source src="${base}media/epipolar-basics.mp4" type="video/mp4">
               Your browser cannot play this video.
             </video>
           </figure>
 
-          <aside class="start-chapters" aria-label="Video chapters">
+          <aside class="intro-chapters" aria-label="Video chapters">
             <h2>Chapters</h2>
             <ol>
               ${CHAPTERS.map((c) => `<li><button type="button" data-t="${c.t}"><span>${fmt(c.t)}</span>${c.label}</button></li>`).join('')}
@@ -47,19 +47,19 @@ class StartPage implements Page {
           </aside>
         </div>
 
-        <section class="start-next" aria-label="Where to go next">
-          <a class="start-card" href="#/lab">
-            <span class="start-card-kicker">Play with it</span>
+        <section class="intro-next" aria-label="Where to go next">
+          <a class="intro-card" href="#/lab">
+            <span class="intro-card-kicker">Play with it</span>
             <strong>3D lab →</strong>
             <p>Move the cameras and the point yourself and watch the epipolar line follow.</p>
           </a>
-          <a class="start-card" href="#/concepts">
-            <span class="start-card-kicker">Want the math?</span>
+          <a class="intro-card" href="#/concepts">
+            <span class="intro-card-kicker">Want the math?</span>
             <strong>Core concepts →</strong>
             <p>The fundamental and essential matrices, step by step, with interactive playgrounds.</p>
           </a>
-          <a class="start-card" href="#/photos">
-            <span class="start-card-kicker">Try real images</span>
+          <a class="intro-card" href="#/photos">
+            <span class="intro-card-kicker">Try real images</span>
             <strong>Photo lab →</strong>
             <p>See epipolar lines on real photos, or take your own.</p>
           </a>
@@ -67,7 +67,7 @@ class StartPage implements Page {
       </div>`;
 
     this.video = container.querySelector('video');
-    container.querySelectorAll<HTMLButtonElement>('.start-chapters button').forEach((button) => {
+    container.querySelectorAll<HTMLButtonElement>('.intro-chapters button').forEach((button) => {
       button.addEventListener('click', () => this.seek(Number(button.dataset.t)));
     });
   }
@@ -95,5 +95,5 @@ class StartPage implements Page {
 }
 
 export function createPage(): Page {
-  return new StartPage();
+  return new IntroPage();
 }

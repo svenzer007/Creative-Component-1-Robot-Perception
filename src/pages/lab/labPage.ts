@@ -9,7 +9,7 @@ import { PresentationController } from '../../ui/presentation';
 const LAB_MARKUP = `
   <header class="site-header">
     <div>
-      <p class="eyebrow">NYU Robot Perception · Creative Component 1</p>
+      <p class="eyebrow">3D Geometry Lab</p>
       <h1>Epipolar Geometry <span>Lab</span></h1>
       <p class="subtitle">From one pixel to one line of possible correspondences.</p>
     </div>

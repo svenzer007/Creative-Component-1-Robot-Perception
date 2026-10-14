@@ -6,7 +6,6 @@ import { HeroFigure } from './heroFigure';
 
 export interface Author {
   name: string;
-  initials: string;
   program: string;
   /** One of the app's camera-view hues, so each author reads as one view of the same scene. */
   color: string;
@@ -14,16 +13,16 @@ export interface Author {
 
 /** Listed alphabetically by surname: equal billing, equal cards. */
 export const AUTHORS: readonly Author[] = [
-  { name: 'Stavan Christian', initials: 'SC', program: 'PhD candidate, Electrical and Computer Engineering', color: '#52d6ff' },
-  { name: 'Ernest Saakian', initials: 'ES', program: 'M.S. Computer Engineering', color: '#ffb84d' },
-  { name: 'Sai Sriya Tulluri', initials: 'ST', program: 'M.S. Mechatronics and Robotics', color: '#a990ff' },
+  { name: 'Stavan Christian', program: 'PhD candidate, Electrical and Computer Engineering', color: '#52d6ff' },
+  { name: 'Ernest Saakian', program: 'M.S. Computer Engineering', color: '#ffb84d' },
+  { name: 'Sai Sriya Tulluri', program: 'M.S. Mechatronics and Robotics', color: '#a990ff' },
 ];
 
 export const AFFILIATION = 'NYU Tandon School of Engineering';
 
 /** One-line introduction for every tab, keyed by route id. A new tab needs a line here (a test checks). */
 export const PAGE_INTROS: Readonly<Record<string, { verb: string; text: string }>> = {
-  start: { verb: 'Watch', text: 'A two-minute narrated animation that introduces the idea from scratch, with chapters to jump between.' },
+  intro: { verb: 'Watch', text: 'A two-minute narrated animation that introduces the idea from scratch, with chapters to jump between.' },
   lab: { verb: 'Play', text: 'Move two cameras and a point in 3D and watch every part of the construction respond, with an eight-step guided mode.' },
   concepts: { verb: 'Understand', text: 'Playgrounds for the fundamental and essential matrices, from pixel coordinates to camera pose.' },
   photos: { verb: 'Try', text: 'Epipolar lines on real images: start from a sample scene, upload your own, or take new photos.' },
@@ -39,7 +38,7 @@ function authorCard(author: Author): string {
   return `
     <article class="home-author" style="--author: ${author.color}">
       <span class="home-corner tl"></span><span class="home-corner tr"></span><span class="home-corner bl"></span><span class="home-corner br"></span>
-      <span class="home-author-badge" aria-hidden="true">${author.initials}</span>
+      <span class="home-author-badge"><img src="${import.meta.env.BASE_URL}media/nyu-logo.png" alt="" width="113" height="162"></span>
       <h3>${author.name}</h3>
       <p>${author.program}</p>
     </article>`;
@@ -86,7 +85,7 @@ class HomePage implements Page {
             <p class="home-lede">Epipolar geometry describes how two images of the same scene, taken from different positions, constrain each other. It is the foundation that lets machines turn flat pictures into 3D measurements, and most systems that perceive depth or motion with cameras are built on it.</p>
             <p class="home-lede">This project makes that geometry something you can see and handle: first by intuition, then through its equations, and finally on real photographs.</p>
             <div class="home-actions">
-              <a class="primary-button home-cta" href="#/start">Begin with the 2-minute intro</a>
+              <a class="primary-button home-cta" href="#/intro">Begin with the 2-minute intro</a>
               <button type="button" class="quiet-button home-scroll">See all pages</button>
             </div>
           </div>
@@ -97,7 +96,6 @@ class HomePage implements Page {
           <div class="home-section-head">
             <p class="home-eyebrow">Authors</p>
             <h2 id="home-authors-title">Three views, one project</h2>
-            <p>Listed alphabetically by surname.</p>
           </div>
           <div class="home-author-grid">${AUTHORS.map(authorCard).join('')}</div>
           <p class="home-affiliation"><span>${AFFILIATION}</span></p>

@@ -13,11 +13,11 @@ export const ROUTES: readonly RouteDefinition[] = [
     load: () => import('../pages/home/homePage'),
   },
   {
-    id: 'start',
-    path: '/start',
-    label: 'Start here',
-    title: 'Start here · Epipolar Geometry Lab',
-    load: () => import('../pages/start/startPage'),
+    id: 'intro',
+    path: '/intro',
+    label: '2-minute intro',
+    title: '2-minute intro · Epipolar Geometry Lab',
+    load: () => import('../pages/intro/introPage'),
   },
   {
     id: 'lab',

@@ -9,7 +9,7 @@ By Stavan Christian, Ernest Saakian, and Sai Sriya Tulluri (listed alphabeticall
 The app has six tabs, linked from the bar at the top of every page:
 
 - **Home** (`#/home`, the landing page): what the project explains and why it matters, the authors, and a card for every other tab. A live diagram shows a point sliding along one camera's ray while its image slides along one epipolar line in the other.
-- **Start here** (`#/start`): a two-minute narrated intro video with chapters.
+- **2-minute intro** (`#/intro`): a two-minute narrated intro video with chapters.
 - **3D lab** (`#/lab`): synthetic normalized cameras in a 3D scene. It builds the epipolar plane and line step by step and checks the geometry against `F`.
 - **Core concepts** (`#/concepts`): manipulate `x`, `x′`, `F`, intrinsics, and baseline scale to make the Fundamental and Essential Matrices visible rather than merely symbolic.
 - **Photo lab** (`#/photos`): the same constraint on real images. Upload or take 2–4 photos of one scene (or start from a built-in ray-traced room), and the app estimates `F` on your device. Point at anything and its epipolar line appears in every other photo.
@@ -256,7 +256,7 @@ src/
     home/
       homePage.ts          landing page: intro, authors, a card for every tab
       heroFigure.ts        live two-camera diagram built on the lab's camera model
-    start/startPage.ts     narrated intro video with chapters
+    intro/introPage.ts     narrated intro video with chapters
     applications/          the Applications tab (content in ui/applications*.ts)
     lab/labPage.ts         the 3D lab, mounted as a tab
     concepts/
